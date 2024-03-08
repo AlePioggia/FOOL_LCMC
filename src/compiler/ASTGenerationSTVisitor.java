@@ -2,6 +2,8 @@ package compiler;
 
 import java.util.*;
 
+import compiler.exc.UnimplException;
+import jdk.jshell.spi.ExecutionControl;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 
@@ -15,8 +17,9 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 	String indent;
     public boolean print;
 	
-    ASTGenerationSTVisitor() {}    
-    ASTGenerationSTVisitor(boolean debug) { print=debug; }
+    ASTGenerationSTVisitor() {}
+
+	ASTGenerationSTVisitor(boolean debug) { print=debug; }
         
     private void printVarAndProdName(ParserRuleContext ctx) {
         String prefix="";        
@@ -56,31 +59,79 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 		return new ProgNode(visit(c.exp()));
 	}
 
-/*
 	@Override
-	public Node visitTimes(TimesContext c) {
-		if (print) printVarAndProdName(c);
-		Node n = new TimesNode(visit(c.exp(0)), visit(c.exp(1)));
-		n.setLine(c.TIMES().getSymbol().getLine());		// setLine added
-        return n;		
+	public Node visitTimesDiv(TimesDivContext ctx) {
+		if (print) printVarAndProdName(ctx);
+
+		if (ctx.TIMES() != null) {
+			Node n = new TimesNode(visit(ctx.exp(0)), visit(ctx.exp(1)));
+			n.setLine(ctx.TIMES().getSymbol().getLine());
+			return n;
+		}
+		Node n = new DivNode(visit(ctx.exp(0)), visit(ctx.exp(1)));
+		n.setLine(ctx.DIV().getSymbol().getLine());
+		return n;
+	}
+
+
+	@Override
+	public Node visitPlusMinus(PlusMinusContext ctx) {
+		if (print) printVarAndProdName(ctx);
+		//Checks if it's plus or minus operation
+		if (ctx.PLUS() != null) {
+			Node n = new PlusNode(visit(ctx.exp(0)), visit(ctx.exp(1)));
+			n.setLine(ctx.PLUS().getSymbol().getLine());
+			return n;
+		}
+		Node n = new MinusNode(visit(ctx.exp(0)), visit(ctx.exp(1)));
+		n.setLine(ctx.MINUS().getSymbol().getLine());
+		return n;
 	}
 
 	@Override
-	public Node visitPlus(PlusContext c) {
-		if (print) printVarAndProdName(c);
-		Node n = new PlusNode(visit(c.exp(0)), visit(c.exp(1)));
-		n.setLine(c.PLUS().getSymbol().getLine());	
-        return n;		
+	public Node visitAndOr(AndOrContext ctx) {
+		if (print) printVarAndProdName(ctx);
+		//Checks if it's Or or and
+		if (ctx.AND() != null) {
+			Node n = new AndNode(visit(ctx.exp(0)), visit(ctx.exp(1)));
+			n.setLine(ctx.AND().getSymbol().getLine());
+			return n;
+		}
+		Node n = new OrNode(visit(ctx.exp(0)), visit(ctx.exp(1)));
+		n.setLine(ctx.OR().getSymbol().getLine());
+		return n;
 	}
 
 	@Override
-	public Node visitEq(EqContext c) {
-		if (print) printVarAndProdName(c);
-		Node n = new EqualNode(visit(c.exp(0)), visit(c.exp(1)));
-		n.setLine(c.EQ().getSymbol().getLine());		
-        return n;		
+	public Node visitNot(NotContext ctx) {
+		if (print) printVarAndProdName(ctx);
+		Node node = new NotNode(visit(ctx.exp()));
+		node.setLine(ctx.NOT().getSymbol().getLine());
+		return node;
 	}
-*/
+
+	@Override
+	public Node visitComp(CompContext ctx) {
+		if (print) printVarAndProdName(ctx);
+
+		Node n = null;
+
+		if (ctx.EQ() != null) {
+			n = new EqualNode(visit(ctx.exp(0)), visit(ctx.exp(1)));
+			n.setLine(ctx.EQ().getSymbol().getLine());
+		} else if (ctx.GE() != null) {
+			n = new GreaterEqualNode(visit(ctx.exp(0)), visit(ctx.exp(1)));
+			n.setLine(ctx.GE().getSymbol().getLine());
+		} else if (ctx.LE() != null) {
+			n = new LessEqualNode(visit(ctx.exp(0)), visit(ctx.exp(1)));
+			n.setLine(ctx.LE().getSymbol().getLine());
+		} else {
+			throw new RuntimeException("Unknown comparison operator");
+		}
+
+		return n;
+	}
+
 
 	@Override
 	public Node visitVardec(VardecContext c) {
