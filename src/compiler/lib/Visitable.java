@@ -1,5 +1,10 @@
 package compiler.lib;
 
+/**
+ * Node dichiara di implementa
+ *
+ * */
+
 public interface Visitable {
 
 	/* performs the node specific visit**/

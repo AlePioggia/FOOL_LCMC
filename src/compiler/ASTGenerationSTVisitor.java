@@ -53,7 +53,11 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 	public Node visitLetInProg(LetInProgContext c) {
 		if (print) printVarAndProdName(c);
 		List<DecNode> declist = new ArrayList<>();
+		//c.dec() ritorna una lista con tutti i figli dell'albero sintattico dec
+		// con il for li scorro e ci chiamo la visita, che per ciascuna di essi
+		// chiamerà un node. I nodi li aggiungo alla decList (lista dichiarazioni)
 		for (DecContext dec : c.dec()) declist.add((DecNode) visit(dec));
+		// passo la lista di dichiarazioni ed il nodo che ottengo visitando il corpo
 		return new ProgLetInNode(declist, visit(c.exp()));
 	}
 
@@ -141,12 +145,19 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 	}
 
 
+	/**
+	 * Il varnode è usato per la dichiarazione di una variabile, controllo che sia rispettata
+	 * la sintassi
+	 * */
 	@Override
 	public Node visitVardec(VardecContext c) {
 		if (print) printVarAndProdName(c);
 		Node n = null;
 		if (c.ID()!=null) { //non-incomplete ST
+			//id, tipo (rappresentato a sua volta con un nodo), nodo
 			n = new VarNode(c.ID().getText(), (TypeNode) visit(c.type()), visit(c.exp()));
+			//numero di linea della variabile, per l'output
+			//La recupero attraverso il token
 			n.setLine(c.VAR().getSymbol().getLine());
 		}
         return n;
@@ -161,12 +172,18 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 			p.setLine(c.ID(i).getSymbol().getLine());
 			parList.add(p);
 		}
+		// come nel caso della dichiarazione di variabile elenco le dichiarazioni e le memorizzo
+		// in una lista
 		List<DecNode> decList = new ArrayList<>();
 		for (DecContext dec : c.dec()) decList.add((DecNode) visit(dec));
 		Node n = null;
 		if (c.ID().size()>0) { //non-incomplete ST
+			// devo passare il nome della funzione (c.ID)
+			// il tipo di ritorno
+			// Mentre nelle variabili c'è solo un id, nelle funzioni ce ne sono diverse, ovviamente
+			// selezioniamo il primo
 			n = new FunNode(c.ID(0).getText(),(TypeNode)visit(c.type(0)),parList,decList,visit(c.exp()));
-			n.setLine(c.FUN().getSymbol().getLine());
+			n.setLine(c.FUN().getSymbol().getLine()); // setto il numero di linea
 		}
         return n;
 	}
@@ -230,6 +247,13 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 		return visit(c.exp());
 	}
 
+
+	/**
+	 * IdNode -> uso di una variabile
+	 * VarNode -> dichiarazione di una variabile
+	 *
+	 * Potrei avere un errore di variabile non dichiarata, quindi la uso per settare la linea.
+	 * */
 	@Override
 	public Node visitId(IdContext c) {
 		if (print) printVarAndProdName(c);
@@ -238,10 +262,13 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 		return n;
 	}
 
+	/**
+	 * Chiamata di funzione senza parametri
+	 * */
 	@Override
 	public Node visitCall(CallContext c) {
 		if (print) printVarAndProdName(c);		
-		List<Node> arglist = new ArrayList<>();
+		List<Node> arglist = new ArrayList<>(); //elenco di argomenti
 		for (ExpContext arg : c.exp()) arglist.add(visit(arg));
 		Node n = new CallNode(c.ID().getText(), arglist);
 		n.setLine(c.ID().getSymbol().getLine());

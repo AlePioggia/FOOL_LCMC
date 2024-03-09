@@ -33,6 +33,9 @@ public class PrintEASTVisitor extends BaseEASTVisitor<Void,VoidException> {
 	public Void visitNode(FunNode n) {
 		printNode(n,n.id);
 		visit(n.retType);
+		//ciclo i parametri, la variabile è di tipo ParNode
+		// quindi richiama direttamente la visit su ParNode, senza passare dalla visit di node (che chiama l'accept)
+		// Per questo sono stati separati i metodi visit da visitNode
 		for (ParNode par : n.parlist) visit(par);
 		for (Node dec : n.declist) visit(dec);
 		visit(n.exp);

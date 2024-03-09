@@ -34,11 +34,11 @@ public class AST {
 	}
 	
 	public static class FunNode extends DecNode {
-		final String id;
-		final TypeNode retType;
-		final List<ParNode> parlist;
-		final List<DecNode> declist; 
-		final Node exp;
+		final String id;//nome
+		final TypeNode retType;//tipo di ritorno
+		final List<ParNode> parlist;//lista di parametri
+		final List<DecNode> declist; //lista di dichiarazioni locali (quello che è dentro il let)
+		final Node exp; // corpo della funzione
 		FunNode(String i, TypeNode rt, List<ParNode> pl, List<DecNode> dl, Node e) {
 	    	id=i; 
 	    	retType=rt; 

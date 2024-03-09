@@ -10,6 +10,11 @@ public int lexicalErrors=0;
   
 prog : progbody EOF ;
 
+/**
+Corpo del programma con almeno una dichiarazione (di variabile o di funzione)
+Il let in è un tipo di funzione in cui nel let definisco tutte le variabili che la funzione utilizzerà.
+L'in è invece il corpo.
+*/
 progbody : LET ( cldec+ dec* | dec+ ) IN exp SEMIC #letInProg
          | exp SEMIC                               #noDecProg
          ;
@@ -25,6 +30,12 @@ methdec : FUN ID COLON type
                    (LET dec+ IN)? exp
               SEMIC ;
 
+/*
+Qui ho la dichiarazione di
+variabile ->  var identificatore : tipo = espressione;
+funzione -> fun identificatore : tipo (identificatore, *);
+**/
+
 dec : VAR ID COLON type ASS exp SEMIC #vardec
     | FUN ID COLON type
           LPAR (ID COLON type (COMMA ID COLON type)* )? RPAR
@@ -33,6 +44,8 @@ dec : VAR ID COLON type ASS exp SEMIC #vardec
     ;
 /**
 Non indico il return perché è implicito, nel paradigma funzionale, che un'operazione ritorni un valore
+#call rappresenta la chiamata di funzione.  Caso ? -> nessun argomento. exp se ho 1 argomento.
+exp (comma exp) se ho più argomenti, separati da virgola
 */
 
 exp     : exp (TIMES | DIV) exp #timesDiv
