@@ -3,6 +3,11 @@ package compiler;
 import java.util.*;
 import compiler.lib.*;
 
+/**
+ * Ogni classe dell'AST è statica per renderla pubblica e farla stare in un unico file.
+ * Tutti i file estendono la classe astratta node.
+ * */
+
 public class AST {
 	
 	public static class ProgLetInNode extends Node {
@@ -17,6 +22,9 @@ public class AST {
 		public <S,E extends Exception> S accept(BaseASTVisitor<S,E> visitor) throws E {return visitor.visitNode(this);}
 	}
 
+	/**
+	 * Radice dell'albero, 'unico parametro è il corpo del programma.
+	 * */
 	public static class ProgNode extends Node {
 		final Node exp;
 		ProgNode(Node e) {exp = e;}

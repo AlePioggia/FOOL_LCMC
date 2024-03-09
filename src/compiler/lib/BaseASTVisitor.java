@@ -5,6 +5,19 @@ import compiler.exc.*;
 
 import static compiler.lib.FOOLlib.*;
 
+/*
+Attraverso l'uso dei generici, abbiamo potuto utilizzare anche il void, ritornando semplicemente null.
+Questo perché, ovviamente nella print non devo ritornare nessun valore.
+Ahimé return null è una sfortuna tecnica.
+
+Abilitando il debug ho la stampa dell'albero fino all'eccezione, oltre all'eccezione stessa.
+**/
+
+/**
+ * La gestione del meccanismo di stampa è presente in BaseVisitor
+ *
+ * */
+
 public class BaseASTVisitor<S,E extends Exception> {
 
 	private boolean incomplExc; // enables throwing IncomplException
@@ -19,6 +32,7 @@ public class BaseASTVisitor<S,E extends Exception> {
 		System.out.println(indent+extractNodeName(n.getClass().getName()));
 	}
 
+	/*Tramite la reflection di java prendono il nome del nodo**/
 	protected void printNode(Node n, String s) {
 		System.out.println(indent+extractNodeName(n.getClass().getName())+": "+s);
 	}
@@ -44,6 +58,10 @@ public class BaseASTVisitor<S,E extends Exception> {
 			return visitByAcc(v);
 	}
 
+	/*
+	* Questo chiama l'accept, che chiama la visit specifica e torna un valore. Poi torno il valore ritornato
+	* dall'accept. Quindi se ho un Integer, torna un integer
+	* */
 	S visitByAcc(Visitable v) throws E {
 		return v.accept(this);
 	}

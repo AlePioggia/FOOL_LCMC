@@ -75,11 +75,11 @@ public class ExecuteVM {
             v2=pop();
             push(v2 - v1);
             break;
-          case SVMParser.STOREW : //
+          case SVMParser.STOREW : //legge due cose dallo stack, prima l'indirizzo in cui mettere il valore, poi la seconda è il valore da mettere in quell'indirizzo
             address = pop();
             memory[address] = pop();    
             break;
-          case SVMParser.LOADW : //
+          case SVMParser.LOADW : //prende dallo stack con una pop l'indirizzo e accede alla memoria, a quell'indirizzo. Da lì carica il valore nello stack.
             push(memory[pop()]);
             break;
           case SVMParser.BRANCH : // fa un salto incondizionato
@@ -99,9 +99,12 @@ public class ExecuteVM {
             v2=pop();
             if (v2 <= v1) ip = address;
             break;
-          case SVMParser.JS : //
+            case SVMParser.JS : //Differenza JS e BRANCH -> il js è un jump di subroutine, significa che implicitamente voglio tornare indietro prima o poi
+            //prendo l'indirizzo dallo stack
             address = pop();
+            //memorizzo l'indirizzo di ritorno in ra
             ra = ip;
+            //torno indietro
             ip = address;
             break;
          case SVMParser.STORERA : //
@@ -122,7 +125,7 @@ public class ExecuteVM {
          case SVMParser.STOREFP : //
             fp=pop();
             break;
-         case SVMParser.COPYFP : //
+         case SVMParser.COPYFP : //FP punta a frame, ovvero pezzi dello stack. E' comodo avere copyFp, che prende la cima attuale dello stack e lo copia dentro fp.
             fp=sp;
             break;
          case SVMParser.STOREHP : //

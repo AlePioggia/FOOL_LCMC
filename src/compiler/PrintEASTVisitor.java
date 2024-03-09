@@ -4,6 +4,12 @@ import compiler.AST.*;
 import compiler.lib.*;
 import compiler.exc.*;
 
+/*
+Attraverso l'uso dei generici, abbiamo potuto utilizzare anche il void, ritornando semplicemente null.
+Questo perché, ovviamente nella print non devo ritornare nessun valore.
+Ahimé return null è una sfortuna tecnica.
+**/
+
 public class PrintEASTVisitor extends BaseEASTVisitor<Void,VoidException> {
 
 	PrintEASTVisitor() { super(false,true); } 

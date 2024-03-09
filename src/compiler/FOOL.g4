@@ -31,6 +31,9 @@ dec : VAR ID COLON type ASS exp SEMIC #vardec
                (LET dec+ IN)? exp
           SEMIC #fundec
     ;
+/**
+Non indico il return perché è implicito, nel paradigma funzionale, che un'operazione ritorni un valore
+*/
 
 exp     : exp (TIMES | DIV) exp #timesDiv
         | exp (PLUS | MINUS) exp #plusMinus

@@ -39,6 +39,10 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
         return result; 
 	}
 
+	/**
+	 Quando visito prog devo generare un progNode. In input deve riceve il figlio (ovvero ciò che c'è dentro)
+
+	 * */
 	@Override
 	public Node visitProg(ProgContext c) {
 		if (print) printVarAndProdName(c);
@@ -63,6 +67,10 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 	public Node visitTimesDiv(TimesDivContext ctx) {
 		if (print) printVarAndProdName(ctx);
 
+		/**
+		 * Creo un timesNode, vuole l'espressione sinistra e destra, visito il figlio sinistro
+		 * e destro del sintax tree.
+		 * */
 		if (ctx.TIMES() != null) {
 			Node n = new TimesNode(visit(ctx.exp(0)), visit(ctx.exp(1)));
 			n.setLine(ctx.TIMES().getSymbol().getLine());
@@ -211,6 +219,11 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 		return new PrintNode(visit(c.exp()));
 	}
 
+	/**
+	 * Ritorno direttamente il risultato della sua visita, perché non deve aggiungere oggetti java
+	 * Le parentesi servono per costruire l'albero correttamente, ma le elimino, perché nell'ast non sono
+	 * comprese.
+	 * */
 	@Override
 	public Node visitPars(ParsContext c) {
 		if (print) printVarAndProdName(c);
