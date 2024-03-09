@@ -1,0 +1,66 @@
+//Linguaggio ad alto livello
+/*
+    lo realizzeremo, traducendo, con poche semplici istruzioni. Il compilatore produrrà del codice asm.
+    Ha una struttura, inizia con il main e finisce con l'istruzione halt.
+    Halt = spengo la virtual machine (nel mondo reale non succede).
+    Dopo l'halt abbiamo una serie lunghissima di corpi di funzione richiamabili dal main.
+    Il codice deve essere generato in modo induttivo, altrimenti è troppo complesso. L'induzione
+    si ottiene attraverso lo stack (da qui viene il concetto di Stack virtual Machine)
+*/
+let
+//Creo una classe tipo scala
+  class List (f:int, r:List) {
+    //metodi
+    fun first:int() f;
+    fun rest:List() r; 
+  }
+  
+  fun printList:List (l:List) 
+      let  
+        fun makeList:List (l:List, i:int) new List (i,l);
+      in 
+         if (l == null) 
+           then {null}
+           else {makeList(printList(l.rest()),print(l.first()))};                 
+  
+  fun append:List (l1:List, l2:List)
+      if (l1 == null)
+        then {l2}
+        else {new List(l1.first(), append(l1.rest(),l2))} ;  
+    
+  /* filtra la lista "l" mantenendo solo gli elementi */
+  /* che sono: <= a "pivot", se "before" è true       */
+  /*            > a "pivot", se "before" è false      */
+  fun filter:List (l:List, pivot:int, before:bool) 
+      let
+        fun accept:bool (cond:bool)
+            if (before) then {cond} else {!(cond)};
+      in        
+        if (l == null) 
+          then {null}
+          else {if ( accept(l.first()<=pivot) )
+                  then { new List( l.first(), filter(l.rest(),pivot,before) ) }
+                  else { filter(l.rest(),pivot,before) }
+               };    
+  
+  fun quicksort:List (l:List)    
+      let
+        var pivot:int = if (l==null) then {0} else {l.first()}; 
+      in          
+        if (l == null) 
+           then {null}
+           else {append( 
+                   quicksort( filter(l.rest(),pivot,true) ),
+                   new List(  pivot,  quicksort( filter(l.rest(),pivot,false) )  )                       
+                 )};
+                                                        
+  var l:List = new List (2, 
+                    new List(1,
+                        new List(4,
+                            new List (3, 
+                                new List(2,
+                                    new List(5,null))))));
+  //questo è un linguaggio funzionale, tutto è una funzione. Nella variabile l ho una lista che creo
+  tramite una classe che si chiama list
+in printList(quicksort(l));
+
