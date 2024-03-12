@@ -28,7 +28,14 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
         	prefix=lowerizeFirstChar(extractCtxName(parentClass.getName()))+": production #";
     	System.out.println(indent+prefix+lowerizeFirstChar(extractCtxName(ctxClass.getName())));                               	
     }
-        
+
+	/**
+	 * Posso accorgermi di figli null solo qui, perché mi vengono passati nell'argomento.
+	 * Dunque se ricevo un parametro null, ritorno null.
+	 * Una volta che la visita ritorna null.
+	 *
+	 * Risolve il problema ma ritorna ast incompleti (va dunque effettuata la gestione su EAST)
+	 * */
     @Override
 	public Node visit(ParseTree t) {
     	if (t==null) return null;

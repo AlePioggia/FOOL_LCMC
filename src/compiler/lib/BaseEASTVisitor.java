@@ -6,6 +6,9 @@ import compiler.exc.UnimplException;
 /**
  * Questo ci dà in più, il metodo che ci consente di visitare l'EASTentry. Ha come base i metodi di visita dell'ast,
  * oltre al metodo per la visita degli stentry
+ *
+ * ie sta per incomplete exception, è stata aggiunta per gestire gli alberi incompleti. Se true lancia l'eccezione,
+ * se false no.
  * */
 
 public class BaseEASTVisitor<S,E extends Exception> extends BaseASTVisitor<S,E>  {

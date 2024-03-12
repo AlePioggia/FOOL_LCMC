@@ -30,26 +30,52 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 		visit(t);
 		return t;
 	} 
-	
+
+	/**
+	 * Invece qui ho una parte di dichiarazione, poi l'espressione.
+	 * Il tipo che dobbiamo ritornare, è il tipo della visita del corpo.
+	 *
+	 * Quando visito una dichiarazione, nel type checking faccio controlli interni, perché:
+	 * - se è una dichiarazione di variabile, devo controllare che l'espressione con cui inizializzo la variabile sia un sottotipo del tipo dichiarato per la variabile;
+	 * - se è una funzione devo fare altre robe
+	 *
+	 * In ogni caso, la visit di una dichiarazione non deve tornare nulla.
+	 *
+	 * Con il try catch gestisco gli errori di tipo, per consentire che la compilazione continui.
+	 * */
 	@Override
 	public TypeNode visitNode(ProgLetInNode n) throws TypeException {
 		if (print) printNode(n);
 		for (Node dec : n.declist)
 			try {
-				visit(dec);
+				visit(dec); //controlli interni che abbiamo citato (le visite tornano null)
 			} catch (IncomplException e) { 
 			} catch (TypeException e) {
 				System.out.println("Type checking error in a declaration: " + e.text);
 			}
+		//visito il corpo del programma e ne ritorno il tipo
 		return visit(n.exp);
 	}
 
+	/**
+	 * Programma senza dichiarazioni
+	 * */
 	@Override
 	public TypeNode visitNode(ProgNode n) throws TypeException {
 		if (print) printNode(n);
 		return visit(n.exp);
 	}
 
+	/**
+	 * Controlliamo che tutte le dichiarazioni locali siano consistenti (durante la dichiarazione non serve verificare
+	 * che i parametri siano corretti, la verifica avviene durante la chiamata).
+	 *
+	 * Poi però c'è il corpo della funzione (che è una espressione), devo verificare che sia compatibile con il tipo
+	 * di ritorno dichiarato della funzione.
+	 *
+	 * Gestione errori nelle dichiarazioni:
+	 * Li catturo, per consentire il continuo della visita.
+	 * */
 	@Override
 	public TypeNode visitNode(FunNode n) throws TypeException {
 		if (print) printNode(n,n.id);
@@ -60,11 +86,16 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 			} catch (TypeException e) {
 				System.out.println("Type checking error in a declaration: " + e.text);
 			}
-		if ( !isSubtype(visit(n.exp),ckvisit(n.retType)) ) 
+		if ( !isSubtype(visit(n.exp),ckvisit(n.retType)) )  //Qui faccio il check sul tipo di ritorno
 			throw new TypeException("Wrong return type for function " + n.id,n.getLine());
 		return null;
 	}
 
+	/**
+	 * es:
+	 * type: Int
+	 * La visita dell'espressione mi dà il tipo dell'espressione, devo verificare che sia il sotto-tipo di type
+	 * */
 	@Override
 	public TypeNode visitNode(VarNode n) throws TypeException {
 		if (print) printNode(n,n.id);
@@ -79,6 +110,13 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 		return visit(n.exp);
 	}
 
+	/**
+	 * Visitiamo condizione, then ed else.
+	 * Condizione -> deve essere booleana;
+	 *
+	 * Siano ford e car. Nel caso dell'if-else devo ritornare il sopra-tipo.
+	 * Molto banalmente, torniamo un tipo che vada bene per entrambi i possibili valori ritornati.
+	 * */
 	@Override
 	public TypeNode visitNode(IfNode n) throws TypeException {
 		if (print) printNode(n);
@@ -96,7 +134,17 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 	 * - non hanno nessuna relazione di subtyping, non si può fare il confronto
 	 * - se c'è una relazione di subtyping, il confronto si può fare
 	 *
-	 * Stessa cosa succede nel ge e le
+	 * Stessa cosa succede nel ge e le.
+	 *
+	 * Ho due superclassi, x e y. Una classe c le implementa entrambe, ed ha una istanza di una e dell'altra, il confronto si può effettuare?
+	 * Sì.
+	 *
+	 * Quindi java consente il confronto se:
+	 * - c'è una sotto-classe in comune;
+	 * - c'è un rapporto di ereditarietà
+	 *
+	 * Il caso del sotto-tipo comune non lo consideriamo, perché non useremo l'ereditarietà multipla.
+	 *
 	 * */
 	@Override
 	public TypeNode visitNode(EqualNode n) throws TypeException {
