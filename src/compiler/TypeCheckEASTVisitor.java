@@ -11,6 +11,15 @@ import static compiler.TypeRels.*;
 //(- per un tipo: "null"; controlla che il tipo non sia incompleto) 
 //
 //visitSTentry(s) ritorna, per una STentry s, il tipo contenuto al suo interno
+
+/**
+ * Una volta arricchito l'albero con le stEntry, posso procedere con il type checking.
+ * Typechecking funzioni:
+ * - il tc delle espressioni usate come argomento ci dovrà dare, per ogni espressione un sottotipo del tipo del
+ * corrispondente parametro.
+ *
+ * I metodi visit visitano l'AST non i nodi dell'EAST.
+ * */
 public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException> {
 
 	TypeCheckEASTVisitor() { super(true); } // enables incomplete tree exceptions 
@@ -108,6 +117,67 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 				&& isSubtype(visit(n.right), new IntTypeNode())) )
 			throw new TypeException("Non integers in sum",n.getLine());
 		return new IntTypeNode();
+	}
+
+	@Override
+	public TypeNode visitNode(GreaterEqualNode n) throws TypeException {
+		if (print) printNode(n);
+		if ( !(isSubtype(visit(n.left), new IntTypeNode())
+				&& isSubtype(visit(n.right), new IntTypeNode())) )
+			throw new TypeException("Non integers in greater or equal",n.getLine());
+		return new IntTypeNode();
+	}
+
+	@Override
+	public TypeNode visitNode(LessEqualNode n) throws TypeException {
+		if (print) printNode(n);
+		if ( !(isSubtype(visit(n.left), new IntTypeNode())
+				&& isSubtype(visit(n.right), new IntTypeNode())) )
+			throw new TypeException("Non integers in less or equal",n.getLine());
+		return new IntTypeNode();
+	}
+
+	/**
+	 * @// TODO: 12/03/2024  
+	 * */
+	@Override
+	public TypeNode visitNode(NotNode n) throws TypeException {
+		return super.visitNode(n);
+	}
+
+	/**
+	 * @// TODO: 12/03/2024  
+	 * */
+	@Override
+	public TypeNode visitNode(MinusNode n) throws TypeException {
+		if (print) printNode(n);
+		return super.visitNode(n);
+	}
+
+	/**
+	 * @// TODO: 12/03/2024
+	 * */
+	@Override
+	public TypeNode visitNode(OrNode n) throws TypeException {
+		if (print) printNode(n);
+		return super.visitNode(n);
+	}
+	
+	@Override
+	public TypeNode visitNode(DivNode n) throws TypeException {
+		if ( !(isSubtype(visit(n.left), new IntTypeNode())
+				&& isSubtype(visit(n.right), new IntTypeNode())) )
+			throw new TypeException("Non integers in div",n.getLine());
+		return new IntTypeNode();
+	}
+
+	/**
+	 * @// TODO: 12/03/2024  
+	 * */
+	@Override
+	public TypeNode visitNode(AndNode n) throws TypeException {
+		if (print) printNode(n);
+		return super.visitNode(n);
 	}
 
 	@Override

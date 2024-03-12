@@ -6,6 +6,7 @@ import compiler.lib.*;
 /**
  * Ogni classe dell'AST è statica per renderla pubblica e farla stare in un unico file.
  * Tutti i file estendono la classe astratta node.
+ * Vogliamo mantenere un ordinamento, i primi metodi sono relativi alla radice, scendendo invece vado verso le foglie.
  * */
 
 public class AST {
@@ -235,7 +236,13 @@ public class AST {
 		@Override
 		public <S,E extends Exception> S accept(BaseASTVisitor<S,E> visitor) throws E {return visitor.visitNode(this);}
 	}
-	
+
+	/**
+	 * serve per rappresentare il tipo di una funzione (freccia),
+	 * che contiene le informazioni corrispondenti alla notazione per i tipi funzionali.
+	 * (T1...Tn parametri) -> T (tipo di ritorno)
+	 *
+	 * */
 	public static class ArrowTypeNode extends TypeNode {
 		final List<TypeNode> parlist;
 		final TypeNode ret;

@@ -107,7 +107,8 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		Map<String, STentry> hm = symTable.get(nestingLevel);
 		// gestisco i parametri
 		List<TypeNode> parTypes = new ArrayList<>();  
-		for (ParNode par : n.parlist) parTypes.add(par.getType()); 
+		for (ParNode par : n.parlist) parTypes.add(par.getType());
+		//ArrowTypeNode è un tipo funzionale, parTypes è una lista di parametri, retType è invece il tipo di ritorno
 		STentry entry = new STentry(nestingLevel, new ArrowTypeNode(parTypes,n.retType),decOffset--);
 		//inserimento di ID nella symtable
 		if (hm.put(n.id, entry) != null) {

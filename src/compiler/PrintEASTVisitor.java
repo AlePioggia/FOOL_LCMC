@@ -8,6 +8,10 @@ import compiler.exc.*;
 Attraverso l'uso dei generici, abbiamo potuto utilizzare anche il void, ritornando semplicemente null.
 Questo perché, ovviamente nella print non devo ritornare nessun valore.
 Ahimé return null è una sfortuna tecnica.
+
+La voidexception è un'eccezione unchecked che serve come parametro da passare al BaseVisitor. Il fatto che
+sia unchecked mi consente di continuare ad usare  i metodi di visita di prima, che non hanno la throws e chiamano
+la visita senza try catch
 **/
 
 public class PrintEASTVisitor extends BaseEASTVisitor<Void,VoidException> {
@@ -127,8 +131,8 @@ public class PrintEASTVisitor extends BaseEASTVisitor<Void,VoidException> {
 	@Override
 	public Void visitNode(ArrowTypeNode n) {
 		printNode(n);
-		for (Node par: n.parlist) visit(par);
-		visit(n.ret,"->"); //marks return type
+		for (Node par: n.parlist) visit(par); //stampo ogni singolo parametro
+		visit(n.ret,"->"); //marks return type, il tipo di ritorno lo marchiamo con una freccia
 		return null;
 	}
 
@@ -196,7 +200,7 @@ public class PrintEASTVisitor extends BaseEASTVisitor<Void,VoidException> {
 	public Void visitSTentry(STentry entry) {
 		printSTentry("nestlev "+entry.nl);
 		printSTentry("type");
-		visit(entry.type);
+		visit(entry.type); //rispetto agli altri, lo visito, potrebbe essere un tipo complesso
 		printSTentry("offset "+entry.offset);
 		return null;
 	}

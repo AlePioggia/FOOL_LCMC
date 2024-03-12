@@ -8,6 +8,9 @@ public class TypeException extends Exception {
 
 	public String text;
 
+	/**
+	 * t è il messaggio, line la linea in cui l'errore avviene, viene passato in input
+	 * */
 	public TypeException(String t, int line) {
 		FOOLlib.typeErrors++;
 		text = t + " at line "+ line;

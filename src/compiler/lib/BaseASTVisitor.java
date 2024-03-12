@@ -15,7 +15,7 @@ Abilitando il debug ho la stampa dell'albero fino all'eccezione, oltre all'eccez
 
 /**
  * La gestione del meccanismo di stampa è presente in BaseVisitor
- *
+ * Ogni metodo di visita lancia un'eccezione
  * */
 
 public class BaseASTVisitor<S,E extends Exception> {
@@ -53,7 +53,7 @@ public class BaseASTVisitor<S,E extends Exception> {
 			try {
 				S result = visitByAcc(v);
 				return result;
-			} finally { indent = temp; }
+			} finally { indent = temp; } //ripristino dell'indentazione, serve nel caso in cui tiri l'eccezione
 		} else
 			return visitByAcc(v);
 	}
