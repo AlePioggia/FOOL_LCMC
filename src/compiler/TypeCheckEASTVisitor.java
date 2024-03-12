@@ -91,6 +91,13 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 		throw new TypeException("Incompatible types in then-else branches",n.getLine());
 	}
 
+	/**
+	 * In java, se x e y
+	 * - non hanno nessuna relazione di subtyping, non si può fare il confronto
+	 * - se c'è una relazione di subtyping, il confronto si può fare
+	 *
+	 * Stessa cosa succede nel ge e le
+	 * */
 	@Override
 	public TypeNode visitNode(EqualNode n) throws TypeException {
 		if (print) printNode(n);
@@ -110,11 +117,6 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 		return new IntTypeNode();
 	}
 
-	/**
-	 * Visito la left e la right e controllo che appunto, che quello che viene tornato dal figlio destro
-	 * e da quello sinistro, siano due interi.
-	 *
-	 * */
 	@Override
 	public TypeNode visitNode(PlusNode n) throws TypeException {
 		if (print) printNode(n);
@@ -127,19 +129,21 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 	@Override
 	public TypeNode visitNode(GreaterEqualNode n) throws TypeException {
 		if (print) printNode(n);
-		if ( !(isSubtype(visit(n.left), new IntTypeNode())
-				&& isSubtype(visit(n.right), new IntTypeNode())) )
-			throw new TypeException("Non integers in greater or equal",n.getLine());
-		return new IntTypeNode();
+		TypeNode l = visit(n.left);
+		TypeNode r = visit(n.right);
+		if ( !(isSubtype(l, r) || isSubtype(r, l)) )
+			throw new TypeException("Incompatible types in greater or equal",n.getLine());
+		return new BoolTypeNode();
 	}
 
 	@Override
 	public TypeNode visitNode(LessEqualNode n) throws TypeException {
 		if (print) printNode(n);
-		if ( !(isSubtype(visit(n.left), new IntTypeNode())
-				&& isSubtype(visit(n.right), new IntTypeNode())) )
-			throw new TypeException("Non integers in less or equal",n.getLine());
-		return new IntTypeNode();
+		TypeNode l = visit(n.left);
+		TypeNode r = visit(n.right);
+		if ( !(isSubtype(l, r) || isSubtype(r, l)) )
+			throw new TypeException("Incompatible types in less or equal",n.getLine());
+		return new BoolTypeNode();
 	}
 
 	@Override
