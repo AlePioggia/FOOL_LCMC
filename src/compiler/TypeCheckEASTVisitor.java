@@ -110,6 +110,11 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 		return new IntTypeNode();
 	}
 
+	/**
+	 * Visito la left e la right e controllo che appunto, che quello che viene tornato dal figlio destro
+	 * e da quello sinistro, siano due interi.
+	 *
+	 * */
 	@Override
 	public TypeNode visitNode(PlusNode n) throws TypeException {
 		if (print) printNode(n);
@@ -137,30 +142,30 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 		return new IntTypeNode();
 	}
 
-	/**
-	 * @// TODO: 12/03/2024  
-	 * */
 	@Override
 	public TypeNode visitNode(NotNode n) throws TypeException {
-		return super.visitNode(n);
+		if ( !isSubtype(visit(n.node), new BoolTypeNode())) {
+			throw new TypeException("Non boolean in not condition", n.getLine());
+		}
+		return new BoolTypeNode();
 	}
 
-	/**
-	 * @// TODO: 12/03/2024  
-	 * */
 	@Override
 	public TypeNode visitNode(MinusNode n) throws TypeException {
 		if (print) printNode(n);
-		return super.visitNode(n);
+		if ( !(isSubtype(visit(n.left), new IntTypeNode())
+				&& isSubtype(visit(n.right), new IntTypeNode())) )
+			throw new TypeException("Non integers in sub",n.getLine());
+		return new IntTypeNode();
 	}
 
-	/**
-	 * @// TODO: 12/03/2024
-	 * */
 	@Override
 	public TypeNode visitNode(OrNode n) throws TypeException {
 		if (print) printNode(n);
-		return super.visitNode(n);
+		if ( !(isSubtype(visit(n.left), new BoolTypeNode())
+				&& isSubtype(visit(n.right), new BoolTypeNode())) )
+			throw new TypeException("Non booleans in or",n.getLine());
+		return new BoolTypeNode();
 	}
 	
 	@Override
@@ -171,13 +176,13 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 		return new IntTypeNode();
 	}
 
-	/**
-	 * @// TODO: 12/03/2024  
-	 * */
 	@Override
 	public TypeNode visitNode(AndNode n) throws TypeException {
 		if (print) printNode(n);
-		return super.visitNode(n);
+		if ( !(isSubtype(visit(n.left), new BoolTypeNode())
+				&& isSubtype(visit(n.right), new BoolTypeNode())) )
+			throw new TypeException("Non booleans in AND",n.getLine());
+		return new BoolTypeNode();
 	}
 
 	@Override
@@ -195,6 +200,13 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 		return at.ret;
 	}
 
+	/**
+	 * Ho attaccato al node la stEntry, così ho tutte le informazioni sulla dichiarazione
+	 * è contenuto dentro n.entry.type.  Può essere un parametro o una variabile, per questo controllo
+	 * che non sia una funzione.
+	 * caso: x + 7 ma x può essere anche una funzione!
+	 * Lo capisco entrando nella stEntry (si visita) e da lì capisco il tipo della dichiarazione
+	 * */
 	@Override
 	public TypeNode visitNode(IdNode n) throws TypeException {
 		if (print) printNode(n,n.id);
