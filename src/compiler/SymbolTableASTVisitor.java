@@ -144,6 +144,8 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 	 * Supponiamo di avere var x: int = x + 7;
 	 * Devo fare la visita prima, perché se usa una x, dovrà trovarlo nella symbol table prima che io inserisca l'x
 	 * che sto definendo adesso.
+	 *
+	 * Le visite del VarNode vengono chiamate dal ProgLetInNode
 	 * */
 	@Override
 	public Void visitNode(VarNode n) {

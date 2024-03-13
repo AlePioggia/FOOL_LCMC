@@ -34,6 +34,10 @@ methdec : FUN ID COLON type
 Qui ho la dichiarazione di
 variabile ->  var identificatore : tipo = espressione;
 funzione -> fun identificatore : tipo (identificatore, *);
+
+Nel type checking:
+- per var controllo che ID() non sia null.
+- per la dichiarazione di funzione, controllo il numero di parametri (che so già essere non null)
 **/
 
 dec : VAR ID COLON type ASS exp SEMIC #vardec
@@ -46,6 +50,8 @@ dec : VAR ID COLON type ASS exp SEMIC #vardec
 Non indico il return perché è implicito, nel paradigma funzionale, che un'operazione ritorni un valore
 #call rappresenta la chiamata di funzione.  Caso ? -> nessun argomento. exp se ho 1 argomento.
 exp (comma exp) se ho più argomenti, separati da virgola
+
+La ricorsione a sinistra, qui viene trasformata in ricorsione a destra
 */
 
 exp     : exp (TIMES | DIV) exp #timesDiv

@@ -5,11 +5,22 @@ import compiler.lib.*;
 import compiler.exc.*;
 import static compiler.lib.FOOLlib.*;
 
+/**
+ * In lab si è iniziato senza considerare le funzioni, per evitare gli scope annidati.
+ * Ho dunque variabili globali e variabili locali alle funzioni.
+ * Viene ritornata una intera stringa, e non ho problema di incompletezza dell'albero.
+ *
+ * */
+
 public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidException> {
 
   CodeGenerationASTVisitor() {}
   CodeGenerationASTVisitor(boolean debug) {super(false,debug);} //enables print for debugging
 
+	/**
+	 * Dobbiamo allocare le variabili rispettando l'ordine degli offset
+	 * Visito le dichiarazioni di variabili, in ordine, concatenandole (con la visita poi vengono messe sullo stack).
+	 * */
 	@Override
 	public String visitNode(ProgLetInNode n) {
 		if (print) printNode(n);
@@ -58,18 +69,24 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 				"sfp", // set $fp to popped value (Control Link)
 				"ltm", // load $tm value (function result)
 				"lra", // load $ra value
-				"js"  // jump to to popped address
+				"js"  // jump to popped address
 			)
 		);
 		return "push "+funl;		
 	}
 
+	/** sufficiente visitarla, per mettere il risultato sullo stack*/
 	@Override
 	public String visitNode(VarNode n) {
 		if (print) printNode(n,n.id);
 		return visit(n.exp);
 	}
 
+	/**
+	 * print è un'espressione della nostra vm che consente di stampare,
+	 * è dunque sufficiente indicarlo
+	 *
+	 * */
 	@Override
 	public String visitNode(PrintNode n) {
 		if (print) printNode(n);
@@ -86,9 +103,9 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 	 	String l2 = freshLabel();		
 		return nlJoin(
 			visit(n.cond),
-			"push 1",
-			"beq "+l1,
-			visit(n.el),
+			"push 1", // aggiungo 1, ovvero true per confrontarlo con la condizione
+			"beq "+l1, // se la condizione è vera salto ad l1, dunque visito e ritorno il then
+			visit(n.el), // qui la condizione è falsa e ritorno l'else
 			"b "+l2,
 			l1+":",
 			visit(n.th),
@@ -96,16 +113,25 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 		);
 	}
 
+	/**
+	 * exp1 == exp2 -> boolean
+	 * if (condition) return true otherwise false
+	 *
+	 * faccio la code generation di left e right, così li ho sullo stack
+	 *
+	 * se left è uguale a right
+	 *
+	 * */
 	@Override
 	public String visitNode(EqualNode n) {
 		if (print) printNode(n);
-	 	String l1 = freshLabel();
+	 	String l1 = freshLabel(); //genero la nuova etichetta a cui saltare
 	 	String l2 = freshLabel();
 		return nlJoin(
 			visit(n.left),
 			visit(n.right),
-			"beq "+l1,
-			"push 0",
+			"beq "+l1, //confronta due elementi, se sono uguali va ad l1, se sono diversi tira dritto
+			"push 0", //ritorno false
 			"b "+l2,
 			l1+":",
 			"push 1",
@@ -123,6 +149,8 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 		);	
 	}
 
+	/* Genero il codice di left, genero il codice di right, poi somma.
+	 Ogni visita genera codice (è la cgen dei lucidi)**/
 	@Override
 	public String visitNode(PlusNode n) {
 		if (print) printNode(n);
@@ -175,7 +203,25 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 
 	@Override
 	public String visitNode(AndNode n) throws VoidException {
-		return super.visitNode(n);
+		if (print) printNode(n);
+		var l1 = freshLabel();
+		var l2 = freshLabel();
+		var l3 = freshLabel();
+		return nlJoin(
+			visit(n.left),
+			"push 1",
+			"beq " + l1,
+			"push 0",
+			"b" + l3,
+			l1+":",
+			visit(n.right), // I don't need to push 1, there's still the one from the first condition
+			"beq" + l2,
+			"push 0",
+			"b" + l3,
+			l2+ ":",
+			"push 1",
+			l3+ ":"
+		);
 	}
 
 	@Override
@@ -198,15 +244,21 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 		);
 	}
 
+	/**
+	 * sullo stack abbiamo messo l'indirizzo della seconda variabile
+	 * con lw prendo il valore della variabile, perché avevamo fino ad ora usato solo l'indirizzo
+	 *
+	 * */
 	@Override
 	public String visitNode(IdNode n) {
 		if (print) printNode(n,n.id);
 		String getAR = null;
-		for (int i = 0;i<n.nl-n.entry.nl;i++) getAR=nlJoin(getAR,"lw");
+		for (int i = 0;i<n.nl-n.entry.nl;i++) getAR=nlJoin(getAR,"lw"); // faccio svariati load word, uno per variabile
 		return nlJoin(
 			"lfp", getAR, // retrieve address of frame containing "id" declaration
 			              // by following the static chain (of Access Links)
-			"push "+n.entry.offset, "add", // compute address of "id" declaration
+			"push "+n.entry.offset,
+			"add", // compute address of "id" declaration
 			"lw" // load value of "id" variable
 		);
 	}
@@ -217,6 +269,7 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 		return "push "+(n.val?1:0);
 	}
 
+	/**pusho l'intero, lo aggiungo*/
 	@Override
 	public String visitNode(IntNode n) {
 		if (print) printNode(n,n.val.toString());

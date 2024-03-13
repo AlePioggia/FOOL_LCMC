@@ -1,4 +1,4 @@
-// Generated from C:/Users/aleza/Desktop/LCMC/ProgettoLCMC/FOOL_LCMC/src/compiler/FOOL.g4 by ANTLR 4.13.1
+// Generated from C:/Users/alexp/OneDrive/Desktop/Progetto_LCMC/FOOL_LCMC/src/compiler/FOOL.g4 by ANTLR 4.13.1
 package compiler;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 

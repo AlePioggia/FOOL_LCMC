@@ -5,7 +5,7 @@ import compiler.lib.*;
 public class STentry implements Visitable {
 	final int nl; // nesting level
 	final TypeNode type; //tipo
-	final int offset;
+	final int offset; // mi permette di ricordare quale sia la variabile in considerazione
 	public STentry(int n, TypeNode t, int o) { nl = n; type = t; offset=o; }
 
 	/**
