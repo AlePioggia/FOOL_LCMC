@@ -173,7 +173,20 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 
 	@Override
 	public String visitNode(NotNode n) throws VoidException {
-		return super.visitNode(n);
+		if (print) printNode(n);
+		var l1 = freshLabel();
+		var l2 = freshLabel();
+
+		return nlJoin(
+				visit(n),
+				"push 1",
+				"beq " + l1,
+				"push 1",
+				"b " + l2,
+				l1 + ":",
+				"push 0",
+				l2 + ":"
+		);
 	}
 
 	@Override
@@ -188,7 +201,23 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 
 	@Override
 	public String visitNode(OrNode n) throws VoidException {
-		return super.visitNode(n);
+		if (print) printNode(n);
+		var l1 = freshLabel();
+		var l2 = freshLabel();
+		return nlJoin(
+				visit(n.left),
+				"push 1",
+				"beq " + l1,
+				visit(n.right),
+				"push 1",
+				"beq" + l2,
+				"push 0",
+				"b" + l2,
+				l1 + ":",
+				visit(n.right),
+				"push 1",
+				l2 + ":"
+		);
 	}
 
 	@Override
@@ -214,7 +243,8 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 			"push 0",
 			"b" + l3,
 			l1+":",
-			visit(n.right), // I don't need to push 1, there's still the one from the first condition
+			visit(n.right),
+			"push 1",
 			"beq" + l2,
 			"push 0",
 			"b" + l3,
