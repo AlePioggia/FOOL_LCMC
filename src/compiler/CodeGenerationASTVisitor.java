@@ -163,12 +163,39 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 
 	@Override
 	public String visitNode(GreaterEqualNode n) throws VoidException {
-		return super.visitNode(n);
+		if (print) printNode(n);
+		var l1 = freshLabel();
+		var l2 = freshLabel();
+		return nlJoin(
+				visit(n.left),
+				visit(n.right),
+				"bleq " + l1, //mi chiedo se left <= right
+				"push 0",
+				"b " + l2,
+				l1 + ":",
+				"push 1",
+				l2 + ":"
+		);
 	}
 
 	@Override
 	public String visitNode(LessEqualNode n) throws VoidException {
-		return super.visitNode(n);
+		if (print) printNode(n);
+		var l1 = freshLabel();
+		var l2 = freshLabel();
+		return nlJoin(
+				visitNode(new EqualNode(n.left, n.right)), //checks if they're equal, the result will be on top of the stack
+				"push 1",
+				"beq " + l1,
+				visit(n.left),
+				visit(n.right),
+				"bleq " + l1,
+				"push 1",
+				"b " + l2,
+				l1 + ":",
+				"push 0",
+				l2 + ":"
+		);
 	}
 
 	@Override
@@ -210,9 +237,9 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 				"beq " + l1,
 				visit(n.right),
 				"push 1",
-				"beq" + l2,
+				"beq " + l2,
 				"push 0",
-				"b" + l2,
+				"b " + l2,
 				l1 + ":",
 				visit(n.right),
 				"push 1",
