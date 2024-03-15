@@ -1,5 +1,6 @@
 package compiler;
 
+import java.lang.reflect.Method;
 import java.util.*;
 import compiler.lib.*;
 
@@ -265,6 +266,150 @@ public class AST {
 
 		@Override
 		public <S,E extends Exception> S accept(BaseASTVisitor<S,E> visitor) throws E {return visitor.visitNode(this);}
+	}
+
+	public static class ClassNode extends DecNode {
+
+		final String classId;
+		final List<FieldNode> fields;
+		final List<MethodNode> methods;
+		final TypeNode superId;
+		ClassTypeNode classType;
+
+		public ClassNode(String id, List<FieldNode> fields, List<MethodNode> methods, TypeNode superId) {
+			this.classId = id;
+			this.fields = Collections.unmodifiableList(fields);
+			this.methods = Collections.unmodifiableList(methods);
+			this.superId = superId;
+		}
+
+		@Override
+		public <S, E extends Exception> S accept(BaseASTVisitor<S, E> visitor) throws E {
+			return visitor.visitNode(this);
+		}
+	}
+
+	public static class FieldNode extends DecNode {
+		final String id;
+		int offset;
+		public FieldNode(String i, TypeNode t) {
+			id = i;
+			type = t;
+		}
+
+		@Override
+		public <S,E extends Exception> S accept(BaseASTVisitor<S,E> visitor) throws E {return visitor.visitNode(this);}
+	}
+
+
+	public static class MethodNode extends DecNode {
+
+		final String id;//nome
+		final TypeNode retType;//tipo di ritorno
+		final List<ParNode> parlist;//lista di parametri
+		final List<DecNode> declist; //lista di dichiarazioni locali (quello che è dentro il let)
+		final Node exp; // corpo della funzione
+		public MethodNode(String i, TypeNode rt, List<ParNode> pl, List<DecNode> dl, Node e) {
+			id=i;
+			retType=rt;
+			parlist=Collections.unmodifiableList(pl);
+			declist=Collections.unmodifiableList(dl);
+			exp=e;
+		}
+
+		@Override
+		public <S, E extends Exception> S accept(BaseASTVisitor<S, E> visitor) throws E {
+			return visitor.visitNode(this);
+		}
+	}
+
+	public static class NewNode extends Node {
+
+		final String id;
+		final List<Node> args;
+
+		public NewNode(String id, List<Node> args) {
+			this.id = id;
+			this.args = args;
+		}
+
+		@Override
+		public <S, E extends Exception> S accept(BaseASTVisitor<S, E> visitor) throws E {
+			return visitor.visitNode(this);
+		}
+	}
+
+	public static class EmptyNode extends Node {
+
+		@Override
+		public <S, E extends Exception> S accept(BaseASTVisitor<S, E> visitor) throws E {
+			return visitor.visitNode(this);
+		}
+	}
+
+	public static class ClassCallNode extends Node {
+
+		final String id;
+		final List<TypeNode> args;
+
+		public ClassCallNode(String id, List<TypeNode> args) {
+			this.id = id;
+			this.args = args;
+		}
+
+		@Override
+		public <S, E extends Exception> S accept(BaseASTVisitor<S, E> visitor) throws E {
+			return visitor.visitNode(this);
+		}
+	}
+
+	public static class RefTypeNode extends TypeNode {
+		final String id; //object reference
+
+		public RefTypeNode(String id) {
+			this.id = id;
+		}
+
+		@Override
+		public <S, E extends Exception> S accept(BaseASTVisitor<S, E> visitor) throws E {
+			return visitor.visitNode(this);
+		}
+	}
+
+	public static class EmptyTypeNode extends TypeNode {
+
+		@Override
+		public <S, E extends Exception> S accept(BaseASTVisitor<S, E> visitor) throws E {
+			return visitor.visitNode(this);
+		}
+	}
+
+	public static class ClassTypeNode extends TypeNode {
+		final List<TypeNode> fields;
+		final List<ArrowTypeNode> methods;
+
+		public ClassTypeNode(List<TypeNode> fields, List<ArrowTypeNode> methods) {
+			this.fields = fields;
+			this.methods = methods;
+		}
+
+		@Override
+		public <S, E extends Exception> S accept(BaseASTVisitor<S, E> visitor) throws E {
+			return visitor.visitNode(this);
+		}
+	}
+
+	public static class MethodTypeNode extends TypeNode {
+		final ArrowTypeNode arrowTypeNode;
+
+		public MethodTypeNode(final ArrowTypeNode arrowTypeNode) {
+			this.arrowTypeNode = arrowTypeNode;
+		}
+
+		@Override
+		public <S, E extends Exception> S accept(BaseASTVisitor<S, E> visitor) throws E {
+			return visitor.visitNode(this);
+		}
 	}
 
 }

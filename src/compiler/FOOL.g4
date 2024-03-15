@@ -113,13 +113,13 @@ VAR     : 'var' ;
 FUN	    : 'fun' ;
 CLASS	: 'class' ;
 EXTENDS : 'extends' ;
-NEW 	: 'new' ;
-NULL    : 'null' ;
+NEW 	: 'new' ;   //OO extension
+NULL    : 'null' ;  //OO extension
 INT	    : 'int' ;
 BOOL	: 'bool' ;
 NUM     : '0' | ('1'..'9')('0'..'9')* ;
 
-ID  	: ('a'..'z'|'A'..'Z')('a'..'z' | 'A'..'Z' | '0'..'9')* ;
+ID  	: ('a'..'z'|'A'..'Z')('a'..'z' | 'A'..'Z' | '0'..'9')* ; //OO extension
 
 
 WHITESP  : ( '\t' | ' ' | '\r' | '\n' )+    -> channel(HIDDEN) ;

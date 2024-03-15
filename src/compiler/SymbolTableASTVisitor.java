@@ -47,8 +47,10 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 	 * Symble table. E' una lista di mappe, mappa nomi di identifictori alla nostra stEntry
 	 * */
 	private List<Map<String, STentry>> symTable = new ArrayList<>();
+	private Map< String, Map<String,STentry> > classTable = new HashMap();
 	private int nestingLevel=0; // current nesting level, quando entro in uno scope lo incremento
-	private int decOffset=-2; // counter for offset of local declarations at current nesting level 
+	private int decOffset=-2; // counter for offset of local declarations at current nesting level
+	private int classOffset = -2;
 	int stErrors=0; // errori che incontriamo
 
 	SymbolTableASTVisitor() {}
@@ -303,6 +305,46 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 	@Override
 	public Void visitNode(IntNode n) {
 		if (print) printNode(n, n.val.toString());
+		return null;
+	}
+
+	/**
+	 * @WIP
+	 * */
+	@Override
+	public Void visitNode(ClassNode n) {
+		if (print) printNode(n);
+		var classTypeNode = new ClassTypeNode(new ArrayList<>(), new ArrayList<>());
+		STentry entry = new STentry(0, classTypeNode ,classOffset);
+		var hm = symTable.get(0);
+		n.classType = classTypeNode;
+		STentry insertedValue = hm.put(n.classId, entry);
+		if (insertedValue != null) {
+			stErrors++; // Classe già dichiarata
+		}
+
+		var symbolVirtualTable = new HashMap();
+
+		//Aggiungendo l'ereditarietà la struttura varia
+		classTable.put(n.classId, symbolVirtualTable);
+		symTable.add(symbolVirtualTable);
+
+		int fieldOffset = -1;
+
+		//Gestione campi
+		for (var field : n.fields) {
+			STentry stEntry = new STentry(nestingLevel, field.getType(), fieldOffset--);
+			symbolVirtualTable.put(field.id, fieldOffset);
+			field.offset = stEntry.offset;
+		}
+
+		//Gestione metodi
+		for (var method: n.methods) {
+			visit(method);
+		}
+
+		//reset SymbolTable
+		symTable.remove(nestingLevel--);
 		return null;
 	}
 }
