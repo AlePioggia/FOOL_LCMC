@@ -237,7 +237,7 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 				"beq " + l1,
 				visit(n.right),
 				"push 1",
-				"beq " + l2,
+				"beq " + l1,
 				"push 0",
 				"b " + l2,
 				l1 + ":",

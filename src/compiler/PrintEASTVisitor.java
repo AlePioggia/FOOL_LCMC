@@ -199,7 +199,7 @@ public class PrintEASTVisitor extends BaseEASTVisitor<Void,VoidException> {
 	@Override
 	public Void visitNode(NotNode n) {
 		printNode(n);
-		visit(n);
+		visit(n.node);
 		return null;
 	}
 

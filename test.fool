@@ -1,0 +1,14 @@
+let
+  var x:int = 10;
+  var y:int = 2;
+  var ge:bool = x <= y;
+  var le:bool = x >= y;
+  var no:bool = !true;
+  var and:bool = false && false;
+  var or:bool = false || false;
+  var minus:int = x-y;
+  var div:int = x/y;
+in
+  print (
+    no
+  );
