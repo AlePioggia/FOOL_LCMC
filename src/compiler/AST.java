@@ -353,6 +353,9 @@ public class AST {
 
 		final String id;
 		final List<TypeNode> args;
+		STentry entry; //first identifier
+		STentry methodEntry; //second identifier
+		int nestingLevel;
 
 		public ClassCallNode(String id, List<TypeNode> args) {
 			this.id = id;

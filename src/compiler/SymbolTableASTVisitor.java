@@ -310,6 +310,8 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 
 	/***
 	 * Very similar to FunNode, it differs from the fact that it even contains local declarations
+	 * @TODO add prints
+	 *
 	 * @param n
 	 * @return
 	 * @throws VoidException
@@ -457,10 +459,26 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 	}
 
 	/**
-	 * @TODO implement
+	 * @TODO add prints
 	 * */
 	@Override
 	public Void visitNode(ClassCallNode node) throws VoidException {
-		return super.visitNode(node);
+		if (print) printNode(node);
+		STentry entry = stLookup(node.id);
+		if (entry == null) {
+			System.out.println("Class id " + node.id + " at line "+ node.getLine() + " not declared");
+			stErrors++;
+		} else {
+			node.entry = entry;
+			node.nestingLevel = nestingLevel;
+			if (node.methodEntry == null) {
+				stErrors++;
+			}
+		}
+		for (var arg: node.args) {
+			visit(arg);
+		}
+
+		return null;
 	}
 }
