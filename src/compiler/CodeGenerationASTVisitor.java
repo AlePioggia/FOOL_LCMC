@@ -162,7 +162,7 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 	}
 
 	@Override
-	public String visitNode(GreaterEqualNode n) throws VoidException {
+	public String visitNode(LessEqualNode n) throws VoidException {
 		if (print) printNode(n);
 		var l1 = freshLabel();
 		var l2 = freshLabel();
@@ -179,14 +179,14 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 	}
 
 	@Override
-	public String visitNode(LessEqualNode n) throws VoidException {
+	public String visitNode(GreaterEqualNode n) throws VoidException {
 		if (print) printNode(n);
 		var l1 = freshLabel();
 		var l2 = freshLabel();
 		return nlJoin(
 				visitNode(new EqualNode(n.left, n.right)), //checks if they're equal, the result will be on top of the stack
 				"push 1",
-				"beq " + l1,
+				"beq " + l2,
 				visit(n.left),
 				visit(n.right),
 				"bleq " + l1,
@@ -205,7 +205,7 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 		var l2 = freshLabel();
 
 		return nlJoin(
-				visit(n),
+				visit(n.node),
 				"push 1",
 				"beq " + l1,
 				"push 1",
@@ -241,7 +241,6 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 				"push 0",
 				"b " + l2,
 				l1 + ":",
-				visit(n.right),
 				"push 1",
 				l2 + ":"
 		);
@@ -268,13 +267,13 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 			"push 1",
 			"beq " + l1,
 			"push 0",
-			"b" + l3,
+			"b " + l3,
 			l1+":",
 			visit(n.right),
 			"push 1",
-			"beq" + l2,
+			"beq " + l2,
 			"push 0",
-			"b" + l3,
+			"b " + l3,
 			l2+ ":",
 			"push 1",
 			l3+ ":"
