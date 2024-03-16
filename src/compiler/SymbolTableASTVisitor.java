@@ -308,6 +308,61 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		return null;
 	}
 
+	/***
+	 * Very similar to FunNode, it differs from the fact that it even contains local declarations
+	 * @param n
+	 * @return
+	 * @throws VoidException
+	 */
+	@Override
+	public Void visitNode(MethodNode n) throws VoidException {
+		if (print) printNode(n);
+
+		//Declaration scope
+
+		List<TypeNode> parTypes = new ArrayList<>();
+		var hm = symTable.get(nestingLevel);
+
+		for (var par: n.parlist) {
+			parTypes.add(par.getType());
+		}
+
+		STentry sTentry = new STentry(nestingLevel, new MethodTypeNode(new ArrowTypeNode(parTypes, n.getType())), decOffset--);
+		if (hm.put(n.id, sTentry) == null) {
+			stErrors++;
+		}
+
+		n.offset = sTentry.offset;
+		hm.put(n.id, sTentry);
+
+		//Method body scope
+		nestingLevel++;
+		Map<String, STentry> methodsTable = new HashMap<>();
+
+		var oldDecOffset = decOffset;
+		decOffset = -2; //declarationOffset per il nesting level corrente
+		int parOffset = 1;
+
+		//Declarations
+		for (var dec: n.declist) {
+			visit(dec);
+		}
+
+		//Parameters uses
+		for (var par: n.parlist) {
+			if (methodsTable.put(par.id, new STentry(nestingLevel,par.getType(),parOffset++)) != null) {
+				System.out.println("Par id " + par.id + " at line "+ n.getLine() +" already declared");
+				stErrors++;
+			}
+		}
+		//Uses induction to elaborate body
+		visit(n.exp);
+
+		symTable.remove(nestingLevel--);
+		decOffset = oldDecOffset;
+		return null;
+	}
+
 	/**
 	 * @TODO implement inheritance aspects
 	 * */
