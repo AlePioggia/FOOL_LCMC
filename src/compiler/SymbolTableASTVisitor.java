@@ -378,26 +378,34 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 
 	@Override
 	public Void visitNode(NewNode n) throws VoidException {
-		return super.visitNode(n);
+		if (print) printNode(n);
+		if (!classTable.containsKey(n.id)) stErrors++;
+		n.sTentry = symTable.get(0).get(n.id); //aggiungo informazioni al new, sulla classe da cui crea l'oggetto
+		n.args.forEach(el -> visit(el)); //controlla che le variabili siano dichiarate e che siano giuste
+		return null;
 	}
 
 	@Override
 	public Void visitNode(EmptyNode n) throws VoidException {
-		return super.visitNode(n);
+		if (print) printNode(n);
+		return null;
 	}
 
-	@Override
-	public Void visitNode(MethodTypeNode n) throws VoidException {
-		return super.visitNode(n);
-	}
-
+	/**
+	 * Contains class name that refers to class declared. Like A a = new A(). A is the ID
+	 * */
 	@Override
 	public Void visitNode(RefTypeNode n) throws VoidException {
-		return super.visitNode(n);
+		if (print) printNode(n, n.id);
+		if (!classTable.containsKey(n.id)) stErrors++;
+		return null;
 	}
 
+	/**
+	 * @TODO implement
+	 * */
 	@Override
-	public Void visitNode(EmptyTypeNode n) throws VoidException {
-		return super.visitNode(n);
+	public Void visitNode(ClassCallNode node) throws VoidException {
+		return super.visitNode(node);
 	}
 }
