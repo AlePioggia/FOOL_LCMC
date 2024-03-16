@@ -309,23 +309,32 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 	}
 
 	/**
-	 * @WIP
+	 * @TODO implement inheritance aspects
 	 * */
 	@Override
 	public Void visitNode(ClassNode n) {
 		if (print) printNode(n);
 		var classTypeNode = new ClassTypeNode(new ArrayList<>(), new ArrayList<>());
+		//Class declaration, creation of a new STEntry, nesting level 0 because it's global
 		STentry entry = new STentry(0, classTypeNode ,classOffset);
+		//Reference to head of symbol table (global scope)
 		var hm = symTable.get(0);
 		n.classType = classTypeNode;
+		//Insert declaration in front of table
 		STentry insertedValue = hm.put(n.classId, entry);
-		if (insertedValue != null) {
+
+		//if put fails, it means class was already declared, throws an error
+		if (insertedValue == null) {
 			stErrors++; // Classe già dichiarata
 		}
 
-		var symbolVirtualTable = new HashMap();
+		//After the class declaration, it's needed to go deep, inside the class scope
+		nestingLevel++;
 
-		//Aggiungendo l'ereditarietà la struttura varia
+		//Virtual table for current scope
+		Map<String, STentry> symbolVirtualTable = new HashMap();
+
+		//It saves the table for use
 		classTable.put(n.classId, symbolVirtualTable);
 		symTable.add(symbolVirtualTable);
 
@@ -334,17 +343,61 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		//Gestione campi
 		for (var field : n.fields) {
 			STentry stEntry = new STentry(nestingLevel, field.getType(), fieldOffset--);
-			symbolVirtualTable.put(field.id, fieldOffset);
-			field.offset = stEntry.offset;
+			if (symbolVirtualTable.put(field.id, stEntry) == null) {
+				stErrors++;
+			} else {
+				field.offset = stEntry.offset;
+				//conversion offset -> position
+				classTypeNode.allFields.add(- field.offset - 1, field.getType());
+			}
 		}
+
+		var methodNames = new HashSet();
+		var oldDecOffset = decOffset;
+		decOffset = 0;
 
 		//Gestione metodi
 		for (var method: n.methods) {
+			if (methodNames.contains(method.id)) {
+				stErrors++;
+			} else {
+				methodNames.add(method.id);
+			}
+			//need to visit cause of name conflicts (internal scope), and method signature
 			visit(method);
+
+			classTypeNode.allMethods.add(method.offset,
+					((MethodTypeNode) symbolVirtualTable.get(method.id).type).arrowTypeNode);
 		}
 
+		decOffset = oldDecOffset;
 		//reset SymbolTable
 		symTable.remove(nestingLevel--);
 		return null;
+	}
+
+	@Override
+	public Void visitNode(NewNode n) throws VoidException {
+		return super.visitNode(n);
+	}
+
+	@Override
+	public Void visitNode(EmptyNode n) throws VoidException {
+		return super.visitNode(n);
+	}
+
+	@Override
+	public Void visitNode(MethodTypeNode n) throws VoidException {
+		return super.visitNode(n);
+	}
+
+	@Override
+	public Void visitNode(RefTypeNode n) throws VoidException {
+		return super.visitNode(n);
+	}
+
+	@Override
+	public Void visitNode(EmptyTypeNode n) throws VoidException {
+		return super.visitNode(n);
 	}
 }

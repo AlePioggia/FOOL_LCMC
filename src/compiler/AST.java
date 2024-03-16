@@ -1,6 +1,5 @@
 package compiler;
 
-import java.lang.reflect.Method;
 import java.util.*;
 import compiler.lib.*;
 
@@ -309,6 +308,8 @@ public class AST {
 		final List<ParNode> parlist;//lista di parametri
 		final List<DecNode> declist; //lista di dichiarazioni locali (quello che è dentro il let)
 		final Node exp; // corpo della funzione
+		int offset;
+
 		public MethodNode(String i, TypeNode rt, List<ParNode> pl, List<DecNode> dl, Node e) {
 			id=i;
 			retType=rt;
@@ -385,12 +386,12 @@ public class AST {
 	}
 
 	public static class ClassTypeNode extends TypeNode {
-		final List<TypeNode> fields;
-		final List<ArrowTypeNode> methods;
+		final List<TypeNode> allFields;
+		final List<ArrowTypeNode> allMethods;
 
 		public ClassTypeNode(List<TypeNode> fields, List<ArrowTypeNode> methods) {
-			this.fields = fields;
-			this.methods = methods;
+			this.allFields = fields;
+			this.allMethods = methods;
 		}
 
 		@Override
@@ -401,6 +402,7 @@ public class AST {
 
 	public static class MethodTypeNode extends TypeNode {
 		final ArrowTypeNode arrowTypeNode;
+
 
 		public MethodTypeNode(final ArrowTypeNode arrowTypeNode) {
 			this.arrowTypeNode = arrowTypeNode;
