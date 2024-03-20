@@ -3,6 +3,9 @@ package compiler;
 import compiler.AST.*;
 import compiler.exc.*;
 import compiler.lib.*;
+
+import java.util.List;
+
 import static compiler.TypeRels.*;
 
 //visitNode(n) fa il type checking di un Node n e ritorna:
@@ -84,10 +87,37 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 				visit(dec);
 			} catch (IncomplException e) { 
 			} catch (TypeException e) {
-				System.out.println("Type checking error in a declaration: " + e.text);
+				System.out.println("Type checking error in a function declaration: " + e.text);
 			}
 		if ( !isSubtype(visit(n.exp),ckvisit(n.retType)) )  //Qui faccio il check sul tipo di ritorno
 			throw new TypeException("Wrong return type for function " + n.id,n.getLine());
+		return null;
+	}
+
+	@Override
+	public TypeNode visitNode(MethodNode n) throws TypeException {
+		if (print) printNode(n,n.id);
+		for (Node dec : n.declist)
+			try {
+				visit(dec);
+			} catch (IncomplException e) {
+			} catch (TypeException e) {
+				System.out.println("Type checking error in a method declaration: " + e.text);
+			}
+		if ( !isSubtype(visit(n.exp),ckvisit(n.retType)) )
+			throw new TypeException("Wrong return type for function " + n.id,n.getLine());
+		return null;
+	}
+
+	/**
+	 * @implNote check visit method, not sure if visitNode() or visit()
+	 * */
+	@Override
+	public TypeNode visitNode(ClassNode n) throws TypeException {
+		if (print) printNode(n, n.classId);
+		for (var method: n.methods) {
+			visitNode(method);
+		}
 		return null;
 	}
 
@@ -238,17 +268,66 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 		return new BoolTypeNode();
 	}
 
+	/**
+	 * specie di chiamata a funzione.
+	 * Devo controllare che gli argomenti siano consistenti con i parametri formali.
+	 * Le dichiarazioni dei tipi dei campi le trovo dentro il classTypeNode di ID.
+	 * */
+	@Override
+	public TypeNode visitNode(NewNode n) throws TypeException {
+		if (print) printNode(n, n.id);
+		if (!(visit(n.sTentry) instanceof ClassTypeNode)) {
+			throw new TypeException("Inconsistent type " + n.id, n.getLine());
+		}
+		List<TypeNode> parList = ((ClassTypeNode) n.sTentry.type).allFields;
+		if ( !(parList.size() == n.args.size()) )
+			throw new TypeException("Wrong number of parameters in the invocation of "+n.id,n.getLine());
+		for (int i = 0; i < n.args.size(); i++)
+			if ( !(isSubtype(visit(n.args.get(i)),parList.get(i))) )
+				throw new TypeException("Wrong type for "+(i+1)+"-th parameter in the invocation of "+n.id,n.getLine());
+		return new RefTypeNode(n.id);
+	}
+
+	@Override
+	public TypeNode visitNode(EmptyNode n) throws TypeException {
+		if (print) printNode(n);
+		return new EmptyTypeNode();
+	}
+
 	@Override
 	public TypeNode visitNode(CallNode n) throws TypeException {
 		if (print) printNode(n,n.id);
-		TypeNode t = visit(n.entry); 
-		if ( !(t instanceof ArrowTypeNode) )
-			throw new TypeException("Invocation of a non-function "+n.id,n.getLine());
+		TypeNode t = visit(n.entry);
+		if ((t instanceof MethodTypeNode)) {
+			t = ((MethodTypeNode) t).arrowTypeNode;
+		}
+		if ( !(t instanceof ArrowTypeNode)) {
+			throw new TypeException("Invocation of a non-function/method "+n.id,n.getLine());
+		}
 		ArrowTypeNode at = (ArrowTypeNode) t;
 		if ( !(at.parlist.size() == n.arglist.size()) )
 			throw new TypeException("Wrong number of parameters in the invocation of "+n.id,n.getLine());
 		for (int i = 0; i < n.arglist.size(); i++)
 			if ( !(isSubtype(visit(n.arglist.get(i)),at.parlist.get(i))) )
+				throw new TypeException("Wrong type for "+(i+1)+"-th parameter in the invocation of "+n.id,n.getLine());
+		return at.ret;
+	}
+
+	@Override
+	public TypeNode visitNode(ClassCallNode n) throws TypeException {
+		if (print) printNode(n,n.id);
+		TypeNode t = visit(n.entry);
+		if ((t instanceof MethodTypeNode)) {
+			t = ((MethodTypeNode) t).arrowTypeNode;
+		}
+		if ( !(t instanceof ArrowTypeNode)) {
+			throw new TypeException("Invocation of a non-function/method "+n.id,n.getLine());
+		}
+		ArrowTypeNode at = (ArrowTypeNode) t;
+		if ( !(at.parlist.size() == n.args.size()) )
+			throw new TypeException("Wrong number of parameters in the invocation of "+n.id,n.getLine());
+		for (int i = 0; i < n.args.size(); i++)
+			if ( !(isSubtype(visit(n.args.get(i)),at.parlist.get(i))) )
 				throw new TypeException("Wrong type for "+(i+1)+"-th parameter in the invocation of "+n.id,n.getLine());
 		return at.ret;
 	}
@@ -266,6 +345,8 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 		TypeNode t = visit(n.entry); 
 		if (t instanceof ArrowTypeNode)
 			throw new TypeException("Wrong usage of function identifier " + n.id,n.getLine());
+		if (t instanceof ClassTypeNode)
+			throw new TypeException("Wrong usage of identifier, class type name spotted" + n.id, n.getLine());
 		return t;
 	}
 

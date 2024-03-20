@@ -309,6 +309,7 @@ public class AST {
 		final List<DecNode> declist; //lista di dichiarazioni locali (quello che è dentro il let)
 		final Node exp; // corpo della funzione
 		int offset;
+		String label;
 
 		public MethodNode(String i, TypeNode rt, List<ParNode> pl, List<DecNode> dl, Node e) {
 			id=i;
