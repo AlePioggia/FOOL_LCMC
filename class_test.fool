@@ -1,0 +1,6 @@
+let
+    class A (f:int, r:int) {
+    }
+    var a: A = new A(1, 2);
+
+in print(a);

@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static compiler.lib.FOOLlib.*;
+import static svm.ExecuteVM.MEMSIZE;
 
 /**
  * In lab si è iniziato senza considerare le funzioni, per evitare gli scope annidati.
@@ -511,6 +512,39 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 			"push "+n.entry.offset,
 			"add", // compute address of "id" declaration
 			"lw" // load value of "id" variable
+		);
+	}
+
+	@Override
+	public String visitNode(NewNode n) throws VoidException {
+		if (print) printNode(n, n.id);
+		String argCode = ""; String generatedCode = "";
+		for (int i = 0; i < n.args.size(); i++) argCode = nlJoin(argCode, visit(n.args.get(i)));
+		for (int i = 0; i < n.args.size(); i++) {
+			generatedCode = nlJoin(generatedCode,
+					"lhp",			//push(hp)
+					"sw",			// 1. address = pop() -> takes hp value, then memory[address] = pop(), to put label in heap
+
+					"lhp",			//increment hp
+					"push 1",
+					"add",
+					"shp"
+					);
+		}
+
+		return nlJoin(
+				argCode,
+				generatedCode,
+				"push " +  (MEMSIZE + n.sTentry.offset),
+				"lw",
+				"lhp",
+				"sw", //metto sullo heap ad indirizzo hp
+				"lhp",
+
+				"lhp",//incremento hp
+				"push 1",
+				"add",
+				"shp"
 		);
 	}
 

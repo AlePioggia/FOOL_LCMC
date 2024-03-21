@@ -116,7 +116,7 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 	public TypeNode visitNode(ClassNode n) throws TypeException {
 		if (print) printNode(n, n.classId);
 		for (var method: n.methods) {
-			visitNode(method);
+			visit(method);
 		}
 		return null;
 	}
@@ -315,20 +315,20 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 
 	@Override
 	public TypeNode visitNode(ClassCallNode n) throws TypeException {
-		if (print) printNode(n,n.id);
+		if (print) printNode(n);
 		TypeNode t = visit(n.entry);
 		if ((t instanceof MethodTypeNode)) {
 			t = ((MethodTypeNode) t).arrowTypeNode;
 		}
 		if ( !(t instanceof ArrowTypeNode)) {
-			throw new TypeException("Invocation of a non-function/method "+n.id,n.getLine());
+			throw new TypeException("Invocation of a non-function/method "+n.id1,n.getLine());
 		}
 		ArrowTypeNode at = (ArrowTypeNode) t;
 		if ( !(at.parlist.size() == n.args.size()) )
-			throw new TypeException("Wrong number of parameters in the invocation of "+n.id,n.getLine());
+			throw new TypeException("Wrong number of parameters in the invocation of "+n.id1,n.getLine());
 		for (int i = 0; i < n.args.size(); i++)
 			if ( !(isSubtype(visit(n.args.get(i)),at.parlist.get(i))) )
-				throw new TypeException("Wrong type for "+(i+1)+"-th parameter in the invocation of "+n.id,n.getLine());
+				throw new TypeException("Wrong type for "+(i+1)+"-th parameter in the invocation of "+n.id1,n.getLine());
 		return at.ret;
 	}
 
