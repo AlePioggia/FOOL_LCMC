@@ -31,11 +31,11 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 		String declCode = null;
 		for (Node dec : n.declist) declCode=nlJoin(declCode,visit(dec));
 		return nlJoin(
-			"push 0",	
+			"push 0", //address fittizio 0 per sistemare l'offset
 			declCode, // generate code for declarations (allocation)			
 			visit(n.exp),
 			"halt",
-			getCode()
+			getCode() //elenco delle funzioni
 		);
 	}
 
@@ -48,6 +48,12 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 		);
 	}
 
+	/**
+	 * Genero il codice per il corpo della funzione. Io ho una funzione putCode() che mi memorizza il codice generato
+	 * del corpo della funzione, che metterò dopo l'halt. Ovvero ho una collezione di funzione alla fine, in cui saltare
+	 * Questo è dunque consentito da putCode()
+	 *
+	 * */
 	@Override
 	public String visitNode(FunNode n) {
 		if (print) printNode(n,n.id);
@@ -57,10 +63,10 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 			popDecl = nlJoin(popDecl,"pop");
 		}
 		for (int i=0;i<n.parlist.size();i++) popParl = nlJoin(popParl,"pop");
-		String funl = freshFunLabel();
+		String funl = freshFunLabel(); // per fare function0: codice_generato, così si può saltare
 		putCode(
 			nlJoin(
-				funl+":",
+				funl+":", //function_i :
 				"cfp", // set $fp to $sp value
 				"lra", // load $ra value
 				declCode, // generate code for local declarations (they use the new $fp!!!)
@@ -76,7 +82,7 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 				"js"  // jump to popped address
 			)
 		);
-		return "push "+funl;		
+		return "push "+funl;		//indirizzo della funzione da ritornare
 	}
 
 	/**
@@ -113,6 +119,17 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 		);
 		n.label = generatedCode;
 		return null;
+	}
+
+	/**
+	 * Nel caso di null, sullo stack mettiamo -1, perché non è un indirizzo (non esiste l'indirizzo -1).
+	 * Vogliamo distinguere null da qualsiasi altro oggetto, se facciamo new A() == null, vogliamo che torni falso,
+	 * gli id non potranno mai coincidere.
+	 *
+	 * */
+	@Override
+	public String visitNode(EmptyNode n) throws VoidException {
+		if (print) printNode(n); return "push -1";
 	}
 
 	@Override
@@ -365,29 +382,122 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 		);
 	}
 
+	/**
+	 * 1. Devo caricare sullo stack il control link. è il puntatore al frame in cui sono adesso (del chiamante).
+	 * Quindi prendo il frame point sullo stack. (Puntatore al frame del chiamante della mia funzione id.
+	 * Ok ma sono io il chiamante, per quello metto fp)
+	 *
+	 * 2. Calcolo le espressioni degli argomenti attraverso la visita, in ordine inverso, questo perché
+	 * il primo parametro deve essere l'ultimo ad essere messo sullo stack, per finire ad offset 1.
+	 *
+	 * 3. Setto l'access link -> il valore dell'access link è il frame in cui è dichiarata la funzione (lfp).
+	 * Lo stesso frame mi serve anche per recuperare l'indirizzo della funzione (dove è localizzato, per poter saltare).
+	 *
+	 * 4. Prendo l'indirizzo del frame che contiene la dichiarazione di "id", seguendo la static chain.
+	 *
+	 * 5. Il frame in cui è dichiarata la funzione lo devo usare per:
+	 * - settare l'access link;
+	 * - recuperare l'indirizzo effettivo;
+	 * quindi mi serve duplicare il valore che ho sulla cima dello stack, lo faccio usando il registro temporaneo
+	 * stm (store nel tm). Usando due volte ltm ho un valore duplicato sulla cima dello stack.
+	 *
+	 * 6.
+	 * - Alla seconda copia, applico l'offset per trovare l'indirizzo della funzione e faccio il salto.
+	 * - alla prima copia invece, carico nell'heap, l'indirizzo della funzione
+	 * */
 	@Override
 	public String visitNode(CallNode n) {
 		if (print) printNode(n,n.id);
+		String result = "";
+		if (n.entry.type instanceof MethodTypeNode) {
+			result = functionCall(n);
+		} else {
+			result = methodCall(n);
+		}
+		return result;
+	}
+
+	private String functionCall(CallNode n) {
 		String argCode = null, getAR = null;
 		for (int i=n.arglist.size()-1;i>=0;i--) argCode=nlJoin(argCode,visit(n.arglist.get(i)));
-		for (int i = 0;i<n.nl-n.entry.nl;i++) getAR=nlJoin(getAR,"lw");
+		for (int i = 0;i<n.nl-n.entry.nl;i++) getAR=nlJoin(getAR,"lw"); // static chain of access links
 		return nlJoin(
-			"lfp", // load Control Link (pointer to frame of function "id" caller)
-			argCode, // generate code for argument expressions in reversed order
-			"lfp", getAR, // retrieve address of frame containing "id" declaration
-                          // by following the static chain (of Access Links)
-            "stm", // set $tm to popped value (with the aim of duplicating top of stack)
-            "ltm", // load Access Link (pointer to frame of function "id" declaration)
-            "ltm", // duplicate top of stack
-            "push "+n.entry.offset, "add", // compute address of "id" declaration
-			"lw", // load address of "id" function
-            "js"  // jump to popped address (saving address of subsequent instruction in $ra)
+				"lfp", // load Control Link (pointer to frame of function "id" caller)
+				argCode, // generate code for argument expressions in reversed order
+				"lfp", getAR, // retrieve address of frame containing "id" declaration
+				// by following the static chain (of Access Links)
+				"stm", // set $tm to popped value (with the aim of duplicating top of stack)
+				"ltm", // load Access Link (pointer to frame of function "id" declaration)
+				"ltm", // duplicate top of stack
+				"push "+n.entry.offset, "add", // compute address of "id" declaration
+				"lw", // load address of "id" function
+				"js"  // jump to popped address (saving address of subsequent instruction in $ra)
+		);
+	}
+
+	/**
+	 * A differenza dalla chiamata a funzione qui recupero il dispatch pointer dalla memoria e da lì calcolo l'offset, aggiungendolo, raggiungo l'object pointer
+	 *
+	 * */
+	private String methodCall(CallNode n) {
+		String argCode = null, getAR = null;
+		for (int i=n.arglist.size()-1;i>=0;i--) argCode=nlJoin(argCode,visit(n.arglist.get(i)));
+		for (int i = 0;i<n.nl-n.entry.nl;i++) getAR=nlJoin(getAR,"lw"); // static chain of access links
+		return nlJoin(
+				"lfp", // load Control Link (pointer to frame of function "id" caller)
+				argCode, // generate code for argument expressions in reversed order
+				"lfp", getAR, // retrieve address of frame containing "id" declaration
+				// by following the static chain (of Access Links)
+				"stm", // set $tm to popped value (with the aim of duplicating top of stack)
+				"ltm", // load Access Link (pointer to frame of function "id" declaration)
+				"ltm", // duplicate top of stack
+				"lw", // load dispatch pointer
+				"push "+n.entry.offset, "add", // compute address of "id" declaration
+				"lw", // load address of "id" method
+				"js"  // jump to popped address (saving address of subsequent instruction in $ra)
+		);
+	}
+
+	@Override
+	public String visitNode(ClassCallNode node) {
+		if (print) printNode(node, node.id1);
+		String getAR = "";
+		String argCode = "";
+		for (int i = node.args.size() - 1; i >= 0; i--) argCode = nlJoin(argCode, visit(node.args.get(i)));
+		for (int i = 0;i < node.nestingLevel - node.entry.nl;i++) getAR=nlJoin(getAR,"lw"); // static chain of access links
+		return nlJoin(
+				"lfp", 	//load Control link (pointer to frame of function)
+				argCode,		// generate code for argument expressions in reversed order
+				"lfp", getAR, // retrieve address of id1
+				"push " + node.entry.offset, //offset, that added to id1 address, will give us the object pointer
+				"add", // now I have the object pointer in the stack's top
+				"lw", // load object pointer
+				"stm", // set $tm to popped value (with the aim of duplicating top of stack)
+				"ltm", // load Access Link (pointer to frame of function "id" declaration)
+				"ltm", // duplicate top of stack
+				"lw",  //load address, to join dispatch table
+				"push "+ node.methodEntry.offset,
+				"add", // compute address of "id" declaration
+				"lw", // load address of "id" function
+				"js"  // jump to popped address (saving address of subsequent instruction in $ra)
 		);
 	}
 
 	/**
 	 * sullo stack abbiamo messo l'indirizzo della seconda variabile
 	 * con lw prendo il valore della variabile, perché avevamo fino ad ora usato solo l'indirizzo
+	 *
+	 * Come faccio a capire la differenza fra uso e dichiarazione?
+	 * n.entry.nl è il nesting level della dichiarazione
+	 * n.nl è invece il nesting level dell'uso
+	 * Lo abbiamo aggiunto nella symbol table
+	 *
+	 * Dopodiché, molto semplicemente aggiungo all'address, l'offset per recuperare la dichiarazione
+	 *
+	 * 1. Carica sullo stack il frame pointer, punta al frame locale;
+	 * 2. Gestisco la risalita con getAR, è sufficiente deferenziare con lw, punta sempre all'access link
+	 * 3. Applico l'offset all'indirizzo
+	 * 4. Prendo il valore della variabile dichiarata (dallo heap, attraverso l'address) e lo metto sullo stack
 	 *
 	 * */
 	@Override

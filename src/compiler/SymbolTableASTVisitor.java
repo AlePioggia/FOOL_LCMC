@@ -49,7 +49,7 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 	private List<Map<String, STentry>> symTable = new ArrayList<>();
 	private Map< String, Map<String,STentry> > classTable = new HashMap();
 	private int nestingLevel=0; // current nesting level, quando entro in uno scope lo incremento
-	private int decOffset=-2; // counter for offset of local declarations at current nesting level
+	private int decOffset=-2; // counter for offset of local declarations at current nesting level. starts with -2 due to our layout choice
 	private int classOffset = -2;
 	int stErrors=0; // errori che incontriamo
 
@@ -101,7 +101,9 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		return null;
 	}
 
-
+	/**
+	 * Quando ho una dichiarazione di funzione, come offset metto decoffset-- per far fronte alla scelta del layout delle funzioni
+	 * */
 	@Override
 	public Void visitNode(FunNode n) {
 		if (print) printNode(n);
@@ -123,9 +125,9 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		Map<String, STentry> hmn = new HashMap<>();
 		symTable.add(hmn);
 		int prevNLDecOffset=decOffset; // stores counter for offset of declarations at previous nesting level 
-		decOffset=-2;
+		decOffset=-2; //resetto il mio decOffset quando entro in un nuovo livello, in quanto, sia parametri che variabili partono da -2 con il nuovo layout
 		
-		int parOffset=1;
+		int parOffset=1; //parOffset è 1 per via del layout scelto, cresce per ogni parametro dichiarato
 		for (ParNode par : n.parlist)
 			if (hmn.put(par.id, new STentry(nestingLevel,par.getType(),parOffset++)) != null) {
 				System.out.println("Par id " + par.id + " at line "+ n.getLine() +" already declared");
@@ -464,9 +466,9 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 	@Override
 	public Void visitNode(ClassCallNode node) throws VoidException {
 		if (print) printNode(node);
-		STentry entry = stLookup(node.id);
+		STentry entry = stLookup(node.id1);
 		if (entry == null) {
-			System.out.println("Class id " + node.id + " at line "+ node.getLine() + " not declared");
+			System.out.println("Class id " + node.id1 + " at line "+ node.getLine() + " not declared");
 			stErrors++;
 		} else {
 			node.entry = entry;

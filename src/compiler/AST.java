@@ -352,14 +352,16 @@ public class AST {
 
 	public static class ClassCallNode extends Node {
 
-		final String id;
+		final String id1;
+		final String id2;
 		final List<TypeNode> args;
 		STentry entry; //first identifier
 		STentry methodEntry; //second identifier
 		int nestingLevel;
 
-		public ClassCallNode(String id, List<TypeNode> args) {
-			this.id = id;
+		public ClassCallNode(String id1, String id2, List<TypeNode> args) {
+			this.id1 = id1;
+			this.id2 = id2;
 			this.args = args;
 		}
 
