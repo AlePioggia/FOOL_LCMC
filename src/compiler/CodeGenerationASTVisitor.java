@@ -3,6 +3,10 @@ package compiler;
 import compiler.AST.*;
 import compiler.lib.*;
 import compiler.exc.*;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import static compiler.lib.FOOLlib.*;
 
 /**
@@ -73,6 +77,51 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 			)
 		);
 		return "push "+funl;		
+	}
+
+	@Override
+	public String visitNode(ClassNode n)  {
+		if (print) printNode(n, n.classId);
+		//table which contains addresses to class methods
+		List<String> dispatchTable = new ArrayList<>();
+		//add address for each method, it's needed to visit it first
+		for (var method: n.methods) {
+			visit(method);
+			dispatchTable.add(method.label);
+		}
+		String codeGeneration = "";
+		String loadHp = "lhp"; //Used to put hp value in stack, it will be the dispatch pointer to return
+		/**
+		 * Dichiarazione Classe: codice ritornato
+		 * 1. metto valore di $hp sullo stack: sarà il dispatch
+		 * pointer da ritornare alla fine
+		 * */
+		/**
+		 *2. Creo sullo heap la dispatch table,
+		 *  lavorando sullo stack, ogni volta, parto dalla posizione 0
+		 *  della dispatch table (dove c'è il primo metodo),
+		 *  caricherò la sua etichetta sullo stack e dovrò
+		 *  poi fare in modo che questa etichetta finisca nell'indirizzo hp.
+		 * Uso le istruzioni della nostra vm per mettere la label dentro hp.
+		 *
+		 * */
+		for(var label: dispatchTable) {
+			codeGeneration = nlJoin(
+					codeGeneration,
+					"push " + label,
+					"lhp",			//push(hp)
+					"sw",			//takes label, and heap pointer, and uses them to put label in heap
+
+					"lhp",			//increment hp
+					"push 1",
+					"add",
+
+					"shp"			//hp = pop(), stores new hp address in stack, to setup for next cycle
+			);
+
+		}
+
+		return nlJoin(loadHp, codeGeneration);
 	}
 
 	/** sufficiente visitarla, per mettere il risultato sullo stack*/
