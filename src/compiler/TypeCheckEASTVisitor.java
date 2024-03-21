@@ -116,7 +116,12 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 	public TypeNode visitNode(ClassNode n) throws TypeException {
 		if (print) printNode(n, n.classId);
 		for (var method: n.methods) {
-			visit(method);
+			try {
+				visit(method);
+			} catch (TypeException e) {
+				System.out.println("Type checking error in a class declaration: " + e.text);
+			}
+
 		}
 		return null;
 	}
@@ -276,14 +281,15 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 	@Override
 	public TypeNode visitNode(NewNode n) throws TypeException {
 		if (print) printNode(n, n.id);
-		if (!(visit(n.sTentry) instanceof ClassTypeNode)) {
+		TypeNode t = visit(n.sTentry);
+		if (!(t instanceof ClassTypeNode)) {
 			throw new TypeException("Inconsistent type " + n.id, n.getLine());
 		}
-		List<TypeNode> parList = ((ClassTypeNode) n.sTentry.type).allFields;
-		if ( !(parList.size() == n.args.size()) )
+		ClassTypeNode ct = ((ClassTypeNode) t);
+		if ( !(ct.allFields.size() == n.args.size()) )
 			throw new TypeException("Wrong number of parameters in the invocation of "+n.id,n.getLine());
 		for (int i = 0; i < n.args.size(); i++)
-			if ( !(isSubtype(visit(n.args.get(i)),parList.get(i))) )
+			if ( !(isSubtype(visit(n.args.get(i)),ct.allFields.get(i))) )
 				throw new TypeException("Wrong type for "+(i+1)+"-th parameter in the invocation of "+n.id,n.getLine());
 		return new RefTypeNode(n.id);
 	}
@@ -292,6 +298,12 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 	public TypeNode visitNode(EmptyNode n) throws TypeException {
 		if (print) printNode(n);
 		return new EmptyTypeNode();
+	}
+
+	@Override
+	public TypeNode visitNode(RefTypeNode n) throws TypeException {
+		if (print) printNode(n, n.id);
+		return null;
 	}
 
 	@Override

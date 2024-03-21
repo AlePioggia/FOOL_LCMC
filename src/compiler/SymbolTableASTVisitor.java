@@ -333,6 +333,7 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 
 		STentry sTentry = new STentry(nestingLevel, new MethodTypeNode(new ArrowTypeNode(parTypes, n.getType())), decOffset--);
 		if (hm.put(n.id, sTentry) == null) {
+			System.out.println("Par id " + "id" + " at line " + n.getLine() + " already declared");
 			stErrors++;
 		}
 
@@ -384,6 +385,7 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 
 		//if put fails, it means class was already declared, throws an error
 		if (insertedValue == null) {
+			System.out.println("Method id " + "id" + " at line " + n.getLine() + " already declared");
 			stErrors++; // Classe già dichiarata
 		}
 
@@ -440,7 +442,9 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		if (print) printNode(n);
 		if (!classTable.containsKey(n.id)) stErrors++;
 		n.sTentry = symTable.get(0).get(n.id); //aggiungo informazioni al new, sulla classe da cui crea l'oggetto
-		n.args.forEach(el -> visit(el)); //controlla che le variabili siano dichiarate e che siano giuste
+		for (var arg: n.args) {
+			visit(arg);
+		}
 		return null;
 	}
 
@@ -474,6 +478,9 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 			node.entry = entry;
 			node.nestingLevel = nestingLevel;
 			if (node.methodEntry == null) {
+
+				System.out.println("Object id " + node.id1 + " at line "
+						+ node.getLine() + " has no method " + node.id2);
 				stErrors++;
 			}
 		}

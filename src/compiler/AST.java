@@ -272,14 +272,13 @@ public class AST {
 		final String classId;
 		final List<FieldNode> fields;
 		final List<MethodNode> methods;
-		final TypeNode superId;
+		//final TypeNode superId;
 		ClassTypeNode classType;
 
-		public ClassNode(String id, List<FieldNode> fields, List<MethodNode> methods, TypeNode superId) {
+		public ClassNode(String id, List<FieldNode> fields, List<MethodNode> methods) {
 			this.classId = id;
 			this.fields = Collections.unmodifiableList(fields);
 			this.methods = Collections.unmodifiableList(methods);
-			this.superId = superId;
 		}
 
 		@Override
@@ -354,12 +353,12 @@ public class AST {
 
 		final String id1;
 		final String id2;
-		final List<TypeNode> args;
+		final List<Node> args;
 		STentry entry; //first identifier
 		STentry methodEntry; //second identifier
 		int nestingLevel;
 
-		public ClassCallNode(String id1, String id2, List<TypeNode> args) {
+		public ClassCallNode(String id1, String id2, List<Node> args) {
 			this.id1 = id1;
 			this.id2 = id2;
 			this.args = args;

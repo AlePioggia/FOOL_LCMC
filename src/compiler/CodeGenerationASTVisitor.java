@@ -516,7 +516,7 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 	}
 
 	@Override
-	public String visitNode(NewNode n) throws VoidException {
+	public String visitNode(NewNode n) {
 		if (print) printNode(n, n.id);
 		String argCode = ""; String generatedCode = "";
 		for (int i = 0; i < n.args.size(); i++) argCode = nlJoin(argCode, visit(n.args.get(i)));
