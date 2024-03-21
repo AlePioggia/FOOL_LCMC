@@ -79,6 +79,42 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 		return "push "+funl;		
 	}
 
+	/**
+	 * Differenza con funNode -> non ritorna il push label ma l'etichetta che genera la mette nel suo campo label.
+	 * Perché verrà usata a livello di class node, per popolare la dispatch table.
+	 * */
+	@Override
+	public String visitNode(MethodNode n) throws VoidException {
+		if (print) printNode(n, n.id);
+		String declCode = null, popDecl = null, popParl = null;
+		for (Node dec : n.declist) {
+			declCode = nlJoin(declCode,visit(dec));
+			popDecl = nlJoin(popDecl,"pop");
+		}
+		for (int i=0;i<n.parlist.size();i++) popParl = nlJoin(popParl,"pop");
+		String generatedCode = freshFunLabel();
+		putCode(
+				nlJoin(
+						generatedCode +":",
+						"cfp", // set $fp to $sp value
+						"lra", // load $ra value
+						declCode, // generate code for local declarations (they use the new $fp!!!)
+						visit(n.exp), // generate code for function body expression
+						"stm", // set $tm to popped value (function result)
+						popDecl, // remove local declarations from stack
+						"sra", // set $ra to popped value
+						"pop", // remove Access Link from stack
+						popParl, // remove parameters from stack
+						"sfp", // set $fp to popped value (Control Link)
+						"ltm", // load $tm value (function result)
+						"lra", // load $ra value
+						"js"  // jump to popped address
+				)
+		);
+		n.label = generatedCode;
+		return null;
+	}
+
 	@Override
 	public String visitNode(ClassNode n)  {
 		if (print) printNode(n, n.classId);
@@ -110,7 +146,7 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 					codeGeneration,
 					"push " + label,
 					"lhp",			//push(hp)
-					"sw",			//takes label, and heap pointer, and uses them to put label in heap
+					"sw",			// 1. address = pop() -> takes hp value, then memory[address] = pop(), to put label in heap
 
 					"lhp",			//increment hp
 					"push 1",
