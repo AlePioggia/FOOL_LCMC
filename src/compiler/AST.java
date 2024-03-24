@@ -273,7 +273,7 @@ public class AST {
 		final List<FieldNode> fields;
 		final List<MethodNode> methods;
 		//final TypeNode superId;
-		ClassTypeNode classType;
+		//ClassTypeNode classType;
 
 		public ClassNode(String id, List<FieldNode> fields, List<MethodNode> methods) {
 			this.classId = id;
@@ -289,7 +289,7 @@ public class AST {
 
 	public static class FieldNode extends DecNode {
 		final String id;
-		int offset;
+		//int offset;
 		public FieldNode(String i, TypeNode t) {
 			id = i;
 			type = t;
@@ -307,7 +307,7 @@ public class AST {
 		final List<ParNode> parlist;//lista di parametri
 		final List<DecNode> declist; //lista di dichiarazioni locali (quello che è dentro il let)
 		final Node exp; // corpo della funzione
-		int offset;
+		int offset = 0;
 		String label;
 
 		public MethodNode(String i, TypeNode rt, List<ParNode> pl, List<DecNode> dl, Node e) {

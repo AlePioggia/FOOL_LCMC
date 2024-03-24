@@ -59,13 +59,14 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 	@Override
 	public Node visitLetInProg(LetInProgContext c) {
 		if (print) printVarAndProdName(c);
+		List<DecNode> classDeclist = new ArrayList<>();
+		for (CldecContext clDec : c.cldec()) classDeclist.add((DecNode) visit(clDec));
 		List<DecNode> declist = new ArrayList<>();
-		//c.dec() ritorna una lista con tutti i figli dell'albero sintattico dec
-		// con il for li scorro e ci chiamo la visita, che per ciascuna di essi
-		// chiamerà un node. I nodi li aggiungo alla decList (lista dichiarazioni)
 		for (DecContext dec : c.dec()) declist.add((DecNode) visit(dec));
-		// passo la lista di dichiarazioni ed il nodo che ottengo visitando il corpo
-		return new ProgLetInNode(declist, visit(c.exp()));
+		List<DecNode> allDeclist = new ArrayList<>();
+		allDeclist.addAll(classDeclist);
+		allDeclist.addAll(declist);
+		return new ProgLetInNode(allDeclist, visit(c.exp()));
 	}
 
 	@Override

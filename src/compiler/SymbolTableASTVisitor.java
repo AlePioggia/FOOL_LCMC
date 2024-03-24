@@ -332,7 +332,7 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		}
 
 		STentry sTentry = new STentry(nestingLevel, new MethodTypeNode(new ArrowTypeNode(parTypes, n.getType())), decOffset--);
-		if (hm.put(n.id, sTentry) == null) {
+		if (hm.put(n.id, sTentry) != null) {
 			System.out.println("Par id " + "id" + " at line " + n.getLine() + " already declared");
 			stErrors++;
 		}
@@ -371,7 +371,7 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 	/**
 	 * @TODO implement inheritance aspects
 	 * */
-	@Override
+/*	@Override
 	public Void visitNode(ClassNode n) {
 		if (print) printNode(n);
 		var classTypeNode = new ClassTypeNode(new ArrayList<>(), new ArrayList<>());
@@ -379,12 +379,12 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		STentry entry = new STentry(0, classTypeNode ,classOffset);
 		//Reference to head of symbol table (global scope)
 		var hm = symTable.get(0);
-		n.classType = classTypeNode;
+		//n.classType = classTypeNode;
 		//Insert declaration in front of table
 		STentry insertedValue = hm.put(n.classId, entry);
 
 		//if put fails, it means class was already declared, throws an error
-		if (insertedValue == null) {
+		if (insertedValue != null) {
 			System.out.println("Method id " + "id" + " at line " + n.getLine() + " already declared");
 			stErrors++; // Classe già dichiarata
 		}
@@ -404,7 +404,8 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		//Gestione campi
 		for (var field : n.fields) {
 			STentry stEntry = new STentry(nestingLevel, field.getType(), fieldOffset--);
-			if (symbolVirtualTable.put(field.id, stEntry) == null) {
+			if (symbolVirtualTable.put(field.id, stEntry) != null) {
+				System.out.println("field id: " + field.id + " at line "+ n.getLine() + " is already declared");
 				stErrors++;
 			} else {
 				field.offset = stEntry.offset;
@@ -420,6 +421,7 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		//Gestione metodi
 		for (var method: n.methods) {
 			if (methodNames.contains(method.id)) {
+				System.out.println("Method id: " + method.id + " at line "+ n.getLine() + " is already declared");
 				stErrors++;
 			} else {
 				methodNames.add(method.id);
@@ -435,12 +437,81 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		//reset SymbolTable
 		symTable.remove(nestingLevel--);
 		return null;
+	}*/
+	@Override
+	public Void visitNode(ClassNode n) {
+		if (print) printNode(n);
+		//creo un nuovo classTypeNode con liste vuote di campi e metodi, che sarà il tipo della classe
+		ClassTypeNode ctn = new ClassTypeNode(new ArrayList<>(), new ArrayList<>());
+		//creo la nuova entry per la classe
+		STentry entry = new STentry(0, ctn, decOffset--);
+
+		final Map<String, STentry> globalST = symTable.get(0);
+		if (globalST.put(n.classId, entry) != null) {
+			System.out.println("Class id " + n.classId + " at line " + n.getLine() + " already declared");
+			stErrors++;
+		}
+
+		Map<String, STentry> virtualTable = new HashMap<>();
+		// Add the class to the class table
+		classTable.put(n.classId, virtualTable);
+		// Add the class to the symbol table
+		symTable.add(virtualTable);
+
+		// Increase nesting level
+		nestingLevel++;
+
+		// Visit fields of the class
+		int fieldOffset = -1;
+
+		final Set<String> fieldNames = new HashSet<>();
+
+		for (FieldNode field : n.fields) {
+			// Add the field to the class table
+			if (fieldNames.contains(field.id)) {
+				System.out.println("Field id " + field.id + " at line " + n.getLine() + " already declared");
+				stErrors++;
+			} else {
+				fieldNames.add(field.id);
+			}
+			visit(field);
+
+			STentry fieldEntry = new STentry(nestingLevel, field.getType(), fieldOffset--);
+
+			ctn.allFields.add(-fieldEntry.offset - 1, fieldEntry.type);
+
+			virtualTable.put(field.id, fieldEntry);
+		}
+
+		int precOffset = decOffset;
+		decOffset = 0;
+		List<String> methodNames = new ArrayList<>();
+		for (MethodNode method : n.methods) {
+			if (methodNames.contains(method.id)) {
+				System.out.println("Method id " + method.id + " at line " + n.getLine() + " already declared");
+				stErrors++;
+			} else {
+				methodNames.add(method.id);
+			}
+			visit(method);
+
+			final MethodTypeNode methodTypeNode = (MethodTypeNode) symTable.get(nestingLevel).get(method.id).type;
+			ctn.allMethods.add(method.offset, methodTypeNode.arrowTypeNode);
+		}
+		decOffset = precOffset;
+		symTable.remove(nestingLevel--);
+		return null;
 	}
+
+
 
 	@Override
 	public Void visitNode(NewNode n) throws VoidException {
 		if (print) printNode(n);
-		if (!classTable.containsKey(n.id)) stErrors++;
+		if (!classTable.containsKey(n.id)) {
+			System.out.println("Class id " + n.id + " at line " + n.getLine() + " not declared");
+			stErrors++;
+		}
 		n.sTentry = symTable.get(0).get(n.id); //aggiungo informazioni al new, sulla classe da cui crea l'oggetto
 		for (var arg: n.args) {
 			visit(arg);
@@ -472,13 +543,12 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		if (print) printNode(node);
 		STentry entry = stLookup(node.id1);
 		if (entry == null) {
-			System.out.println("Class id " + node.id1 + " at line "+ node.getLine() + " not declared");
+			System.out.println("Var or Par id " + node.id1 + " at line " + node.getLine() + " not declared");
 			stErrors++;
 		} else {
 			node.entry = entry;
 			node.nestingLevel = nestingLevel;
 			if (node.methodEntry == null) {
-
 				System.out.println("Object id " + node.id1 + " at line "
 						+ node.getLine() + " has no method " + node.id2);
 				stErrors++;

@@ -273,6 +273,15 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 		return new BoolTypeNode();
 	}
 
+
+	@Override
+	public TypeNode visitNode(ClassTypeNode n) throws TypeException {
+		if (print) printNode(n);
+		for (TypeNode f : n.allFields) visit(f);
+		for (ArrowTypeNode m : n.allMethods) visit(m);
+		return null;
+	}
+
 	/**
 	 * specie di chiamata a funzione.
 	 * Devo controllare che gli argomenti siano consistenti con i parametri formali.

@@ -411,9 +411,9 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 		if (print) printNode(n,n.id);
 		String result = "";
 		if (n.entry.type instanceof MethodTypeNode) {
-			result = functionCall(n);
-		} else {
 			result = methodCall(n);
+		} else {
+			result = functionCall(n);
 		}
 		return result;
 	}
@@ -427,9 +427,9 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 				argCode, // generate code for argument expressions in reversed order
 				"lfp", getAR, // retrieve address of frame containing "id" declaration
 				// by following the static chain (of Access Links)
-				"stm", // set $tm to popped value (with the aim of duplicating top of stack)
-				"ltm", // load Access Link (pointer to frame of function "id" declaration)
-				"ltm", // duplicate top of stack
+				"stm", // set $tm to popped value (with the aim of duplicating top of stack) -> tm = pop()
+				"ltm", // load Access Link (pointer to frame of function "id" declaration) -> push(tm)
+				"ltm", // duplicate top of stack -> push(tm)
 				"push "+n.entry.offset, "add", // compute address of "id" declaration
 				"lw", // load address of "id" function
 				"js"  // jump to popped address (saving address of subsequent instruction in $ra)
@@ -459,6 +459,8 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 		);
 	}
 
+	// id1.id2()
+	// A a = new A(); a -> A
 	@Override
 	public String visitNode(ClassCallNode node) {
 		if (print) printNode(node, node.id1);
@@ -469,7 +471,8 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 		return nlJoin(
 				"lfp", 	//load Control link (pointer to frame of function)
 				argCode,		// generate code for argument expressions in reversed order
-				"lfp", getAR, // retrieve address of id1
+				"lfp", getAR, // retrieve address of id1's frame pointer
+
 				"push " + node.entry.offset, //offset, that added to id1 address, will give us the object pointer
 				"add", // now I have the object pointer in the stack's top
 				"lw", // load object pointer
@@ -519,6 +522,7 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 	public String visitNode(NewNode n) {
 		if (print) printNode(n, n.id);
 		String argCode = ""; String generatedCode = "";
+		// put args into stack
 		for (int i = 0; i < n.args.size(); i++) argCode = nlJoin(argCode, visit(n.args.get(i)));
 		for (int i = 0; i < n.args.size(); i++) {
 			generatedCode = nlJoin(generatedCode,
@@ -535,13 +539,20 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 		return nlJoin(
 				argCode,
 				generatedCode,
-				"push " +  (MEMSIZE + n.sTentry.offset),
-				"lw",
-				"lhp",
-				"sw", //metto sullo heap ad indirizzo hp
-				"lhp",
 
-				"lhp",//incremento hp
+				// get dispatch pointer from heap
+				"push " +  (MEMSIZE + n.sTentry.offset),
+				"lw", // takes dispatch pointer
+
+				//writes dispatch pointer at hp address (heap) -> serve per allocare spazio per il nuovo oggetto
+				"lhp", // push(hp)
+				"sw", // 1. address = pop() -> takes hp value, then memory[address] = pop()
+
+				// put on stack the object pointer
+				"lhp", //Object pointer, which needs to be returned
+
+				// incremento hp
+				"lhp",
 				"push 1",
 				"add",
 				"shp"
