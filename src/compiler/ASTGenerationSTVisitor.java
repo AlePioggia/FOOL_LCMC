@@ -2,8 +2,6 @@ package compiler;
 
 import java.util.*;
 
-import compiler.exc.UnimplException;
-import jdk.jshell.spi.ExecutionControl;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 
@@ -308,7 +306,8 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 			methodList.add(m);
 		}
 
-		final ClassNode c = new ClassNode(clId, fieldList, methodList);
+		String superId = null;
+		final ClassNode c = new ClassNode(clId, fieldList, methodList, superId);
 		c.setLine(ctx.ID(0).getSymbol().getLine());
 		return c;
 	}

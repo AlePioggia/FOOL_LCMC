@@ -380,7 +380,12 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		STentry entry = new STentry(0, classTypeNode ,classOffset);
 		//Reference to head of symbol table (global scope)
 		var hm = symTable.get(0);
-		//n.classType = classTypeNode;
+		if (n.superId != null) {
+			//With inheritance
+			entry = hm.get(n.superId); //entry of superclass
+			n.classType = new ClassTypeNode(((ClassTypeNode) entry.type).allFields, ((ClassTypeNode) entry.type).allMethods);
+		}
+		//No inheritance
 		//Insert declaration in front of table
 		STentry insertedValue = hm.put(n.classId, entry);
 
@@ -395,6 +400,11 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 
 		//Virtual table for current scope
 		Map<String, STentry> symbolVirtualTable = new HashMap();
+		if (n.superId != null) {
+			//with inheritance
+			//copies of all the content of the VirtualTable into symbolVirtualTable
+			symbolVirtualTable.putAll(this.classTable.get(n.superId));
+		}
 
 		//It saves the table for use
 		classTable.put(n.classId, symbolVirtualTable);
@@ -412,11 +422,22 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 			} else {
 				fieldNames.add(field.id);
 			}
-			visit(field);
 
-			STentry fieldEntry = new STentry(nestingLevel, field.getType(), fieldOffset--);
+			STentry fieldEntry = null;
 
-			classTypeNode.allFields.add(-fieldEntry.offset - 1, fieldEntry.type);
+			var overriddenFieldEntry = symbolVirtualTable.get(field.id);
+			if (overriddenFieldEntry != null && !(overriddenFieldEntry.type instanceof MethodTypeNode)) {
+				fieldEntry = new STentry(nestingLevel, field.getType(), overriddenFieldEntry.offset);
+				classTypeNode.allFields.set(-fieldEntry.offset - 1, fieldEntry.type);
+				field.offset = fieldEntry.offset;
+			} else {
+				fieldEntry = new STentry(nestingLevel, field.getType(), fieldOffset--);
+				classTypeNode.allFields.add(-fieldEntry.offset - 1, fieldEntry.type);
+				if (overriddenFieldEntry != null) {
+					System.out.println("Cannot override field id " + field.id + " with a method");
+					stErrors++;
+				}
+			}
 
 			symbolVirtualTable.put(field.id, fieldEntry);
 		}

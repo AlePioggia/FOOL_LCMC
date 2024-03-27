@@ -272,13 +272,14 @@ public class AST {
 		final String classId;
 		final List<FieldNode> fields;
 		final List<MethodNode> methods;
-		//final TypeNode superId;
-		//ClassTypeNode classType;
+		final String superId;
+		ClassTypeNode classType;
 
-		public ClassNode(String id, List<FieldNode> fields, List<MethodNode> methods) {
+		public ClassNode(String id, List<FieldNode> fields, List<MethodNode> methods, String superId) {
 			this.classId = id;
 			this.fields = Collections.unmodifiableList(fields);
 			this.methods = Collections.unmodifiableList(methods);
+			this.superId = superId;
 		}
 
 		@Override
@@ -289,6 +290,8 @@ public class AST {
 
 	public static class FieldNode extends DecNode {
 		final String id;
+		public int offset;
+
 		//int offset;
 		public FieldNode(String i, TypeNode t) {
 			id = i;
