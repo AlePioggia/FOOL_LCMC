@@ -19,8 +19,11 @@ import static svm.ExecuteVM.MEMSIZE;
 
 public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidException> {
 
-  CodeGenerationASTVisitor() {}
-  CodeGenerationASTVisitor(boolean debug) {super(false,debug);} //enables print for debugging
+
+	private List<List<String>> dispatchTables = new ArrayList<>();
+
+	CodeGenerationASTVisitor() {}
+  	CodeGenerationASTVisitor(boolean debug) {super(false,debug);} //enables print for debugging
 
 	/**
 	 * Dobbiamo allocare le variabili rispettando l'ordine degli offset
@@ -138,6 +141,12 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 		if (print) printNode(n, n.classId);
 		//table which contains addresses to class methods
 		List<String> dispatchTable = new ArrayList<>();
+		//
+		if (n.superId != null) {
+			//dispatch table of inherited class
+			dispatchTable.addAll(dispatchTables.get(-n.superEntry.offset - 2));
+		}
+		this.dispatchTables.add(dispatchTable);
 		//add address for each method, it's needed to visit it first
 		for (var method: n.methods) {
 			visit(method);
