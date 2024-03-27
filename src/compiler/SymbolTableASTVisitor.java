@@ -369,9 +369,6 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		return null;
 	}
 
-	/**
-	 * @TODO implement inheritance aspects
-	 * */
 	@Override
 	public Void visitNode(ClassNode n) {
 		if (print) printNode(n);
@@ -442,9 +439,13 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 			symbolVirtualTable.put(field.id, fieldEntry);
 		}
 
+		int currentDecOffset = decOffset, previousNestingLevelDeclarationOffset = decOffset;
+		// method declarationOffset starts from 0
 		var methodNames = new HashSet();
-		var oldDecOffset = decOffset;
 		decOffset = 0;
+		if (n.superId != null) {
+			decOffset = ((ClassTypeNode) symTable.get(0).get(n.superId).type).allMethods.size();
+		}
 
 		//Gestione metodi
 		for (var method: n.methods) {
@@ -454,6 +455,7 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 			} else {
 				methodNames.add(method.id);
 			}
+
 			//need to visit cause of name conflicts (internal scope), and method signature
 			visit(method);
 
@@ -461,9 +463,11 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 					((MethodTypeNode) symbolVirtualTable.get(method.id).type).arrowTypeNode);
 		}
 
-		decOffset = oldDecOffset;
+		decOffset = currentDecOffset;
 		//reset SymbolTable
 		symTable.remove(nestingLevel--);
+		decOffset = previousNestingLevelDeclarationOffset;
+
 		return null;
 	}
 /*
