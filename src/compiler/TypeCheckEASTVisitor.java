@@ -123,6 +123,21 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 			}
 
 		}
+		if (n.superId != null) {
+			var classtypenode = n.classType;
+			ClassTypeNode superentry = (ClassTypeNode) n.superEntry.type;
+			for (int i=0; i<superentry.allFields.size(); i++) {
+				if(!isSubtype(superentry.allFields.get(i), classtypenode.allFields.get(i))){
+					throw new TypeException("Wrong type for field " + n.classId,n.getLine());
+				}
+			}
+			for (int i=0; i<superentry.allMethods.size(); i++) {
+				if(!isSubtype(superentry.allMethods.get(i), classtypenode.allMethods.get(i))){
+					throw new TypeException("Wrong type for method " + n.classId,n.getLine());
+				}
+			}
+
+		}
 		return null;
 	}
 
