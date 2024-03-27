@@ -179,9 +179,13 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 			throw new TypeException("Non boolean condition in if",n.getLine());
 		TypeNode t = visit(n.th);
 		TypeNode e = visit(n.el);
+		var lowestCommonAncestor = lowestCommonAncestor(t, e);
 		if (isSubtype(t, e)) return e;
 		if (isSubtype(e, t)) return t;
-		throw new TypeException("Incompatible types in then-else branches",n.getLine());
+		if (lowestCommonAncestor == null) {
+			throw new TypeException("Failed typecheking for if-else statement ", n.getLine());
+		}
+		return lowestCommonAncestor;
 	}
 
 	/**

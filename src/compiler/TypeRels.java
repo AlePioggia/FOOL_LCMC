@@ -36,4 +36,42 @@ public class TypeRels {
 				|| (a instanceof EmptyTypeNode);
 	}
 
+	public static TypeNode lowestCommonAncestor(TypeNode a, TypeNode b) {
+		// Check if both a and b are either RefTypeNode or EmptyTypeNode
+		if ((a instanceof RefTypeNode && b instanceof RefTypeNode) ||
+				(a instanceof EmptyTypeNode || b instanceof EmptyTypeNode)) {
+
+			// If one of them is EmptyTypeNode, return the other
+			if (a instanceof EmptyTypeNode) {
+				return b;
+			} else if (b instanceof EmptyTypeNode) {
+				return a;
+			}
+
+			// If both are RefTypeNode but with the same id, return a
+			if (((RefTypeNode) a).id.equals(((RefTypeNode) b).id)) {
+				return a;
+			}
+
+			// Find the common supertype if exists
+			String type = superType.get(((RefTypeNode) a).id);
+			while (type != null && isSubtype(b, new RefTypeNode(type))) {
+				type = superType.get(type);
+			}
+
+			// If a common supertype is found, return it as a RefTypeNode
+			return (type != null) ? new RefTypeNode(type) : null;
+
+		} else if ((a instanceof BoolTypeNode || a instanceof IntTypeNode) &&
+				(b instanceof BoolTypeNode || b instanceof IntTypeNode)) {
+			// If both a and b are either BoolTypeNode or IntTypeNode
+
+			// If either a or b is IntTypeNode, return IntTypeNode, otherwise return BoolTypeNode
+			return (a instanceof IntTypeNode || b instanceof IntTypeNode) ? new IntTypeNode() : new BoolTypeNode();
+		}
+
+		// If no common ancestor found, return null
+		return null;
+	}
+
 }
