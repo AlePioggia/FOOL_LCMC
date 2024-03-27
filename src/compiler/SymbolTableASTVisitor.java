@@ -7,7 +7,7 @@ import compiler.lib.*;
 
 
 /**
- * Utilizziamo una symble table, come lista di hashMap, per collegare usi a dichiarazioni.
+ * Utilizziamo una symbol table, come lista di hashMap, per collegare usi a dichiarazioni.
  * Gli scope sono rappresentati dunque da tabelle che stanno dentro la lista. Nella lista,
  * avremo il fronte della lista che è lo scope attuale, in cui siamo posizionati. Poi avremo
  * via via le tabelle degli scope in cui siamo chiusi, fino ad arrivare via via allo scope globale.
@@ -107,7 +107,7 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 	@Override
 	public Void visitNode(FunNode n) {
 		if (print) printNode(n);
-		// prendo il fronte della lista
+		// prendo il fronte della lista (nesting level dello scope attuale)
 		Map<String, STentry> hm = symTable.get(nestingLevel);
 		// gestisco i parametri
 		List<TypeNode> parTypes = new ArrayList<>();  
@@ -134,7 +134,7 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 				stErrors++;
 			}
 		for (Node dec : n.declist) visit(dec);
-		//visito il corpo della funzione, che usa le robe dichiarate nel let
+		//visito il corpo della funzione, prima ho elaborato tutte le dichiarazioni ed i parametri, poi analizzo l'espressione, che usa le dichiarazioni (si ricorda il modello let/in)
 		visit(n.exp);
 		//rimuovere la hashmap corrente poiche' esco dallo scope e decremento il nesting level
 		symTable.remove(nestingLevel--);
@@ -154,7 +154,8 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 	@Override
 	public Void visitNode(VarNode n) {
 		if (print) printNode(n);
-		visit(n.exp);
+		visit(n.exp); 	//visito l'espressione (parte destra), prima di aggiungere la variabile nella symtable,
+						// questo perché, se afferisce a variabili non dichiarate, devo subito lanciare l'eccezione (nel nostro caso, aumentare il numero di errori)
 		Map<String, STentry> hm = symTable.get(nestingLevel); //recupero il fronte della tabella
 		STentry entry = new STentry(nestingLevel,n.getType(),decOffset--); // creo una pallina con le informazioni prese dalla dichiarazione
 		//inserimento di ID della variabile nella symtable (inserisco la pallina)
@@ -286,13 +287,13 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 	@Override
 	public Void visitNode(IdNode n) {
 		if (print) printNode(n);
-		STentry entry = stLookup(n.id);
-		//Ho trovato la pallina
+		STentry entry = stLookup(n.id); //cerca la rispettiva dichiarazione, a partire dallo scope corrente, salendo
+		//Controllo se ho trovato o meno la pallina
 		if (entry == null) {
 			System.out.println("Var or Par id " + n.id + " at line "+ n.getLine() + " not declared");
 			stErrors++;
 		} else {
-			n.entry = entry; // metto la pallina nella variabile entry
+			n.entry = entry; // metto la pallina nella variabile entry, collego l'uso alla dichiarazione
 			n.nl = nestingLevel; // torno al nesting level originale
 		}
 		return null;
@@ -371,7 +372,7 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 	/**
 	 * @TODO implement inheritance aspects
 	 * */
-/*	@Override
+	@Override
 	public Void visitNode(ClassNode n) {
 		if (print) printNode(n);
 		var classTypeNode = new ClassTypeNode(new ArrayList<>(), new ArrayList<>());
@@ -400,18 +401,24 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		symTable.add(symbolVirtualTable);
 
 		int fieldOffset = -1;
+		final Set<String> fieldNames = new HashSet<>();
 
 		//Gestione campi
-		for (var field : n.fields) {
-			STentry stEntry = new STentry(nestingLevel, field.getType(), fieldOffset--);
-			if (symbolVirtualTable.put(field.id, stEntry) != null) {
-				System.out.println("field id: " + field.id + " at line "+ n.getLine() + " is already declared");
+		for (FieldNode field : n.fields) {
+			// Add the field to the class table
+			if (fieldNames.contains(field.id)) {
+				System.out.println("Field id " + field.id + " at line " + n.getLine() + " already declared");
 				stErrors++;
 			} else {
-				field.offset = stEntry.offset;
-				//conversion offset -> position
-				classTypeNode.allFields.add(- field.offset - 1, field.getType());
+				fieldNames.add(field.id);
 			}
+			visit(field);
+
+			STentry fieldEntry = new STentry(nestingLevel, field.getType(), fieldOffset--);
+
+			classTypeNode.allFields.add(-fieldEntry.offset - 1, fieldEntry.type);
+
+			symbolVirtualTable.put(field.id, fieldEntry);
 		}
 
 		var methodNames = new HashSet();
@@ -437,7 +444,8 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		//reset SymbolTable
 		symTable.remove(nestingLevel--);
 		return null;
-	}*/
+	}
+/*
 	@Override
 	public Void visitNode(ClassNode n) {
 		if (print) printNode(n);
@@ -502,6 +510,7 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		symTable.remove(nestingLevel--);
 		return null;
 	}
+*/
 
 
 
