@@ -124,16 +124,21 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 
 		}
 		if (n.superId != null) {
-			var classtypenode = n.classType;
-			ClassTypeNode superentry = (ClassTypeNode) n.superEntry.type;
-			for (int i=0; i<superentry.allFields.size(); i++) {
-				if(!isSubtype(superentry.allFields.get(i), classtypenode.allFields.get(i))){
-					throw new TypeException("Wrong type for field " + n.classId,n.getLine());
+			superType.put(n.classId, n.superId);
+			var classTypeNode = n.classType;
+			ClassTypeNode superEntry = (ClassTypeNode) n.superEntry.type;
+			for (var field : n.fields) {
+				int position = -field.offset-1;
+				if (position < superEntry.allFields.size()
+						&& !isSubtype(classTypeNode.allFields.get(position), superEntry.allFields.get(position))) {
+					throw new TypeException("Wrong type for field " + field.id, field.getLine());
 				}
 			}
-			for (int i=0; i<superentry.allMethods.size(); i++) {
-				if(!isSubtype(superentry.allMethods.get(i), classtypenode.allMethods.get(i))){
-					throw new TypeException("Wrong type for method " + n.classId,n.getLine());
+			for (var method : n.methods) {
+				int position = method.offset;
+				if (position < superEntry.allMethods.size()
+						&& !isSubtype(classTypeNode.allMethods.get(position), superEntry.allMethods.get(position))) {
+					throw new TypeException("Wrong type for method " + method.id, method.getLine());
 				}
 			}
 
