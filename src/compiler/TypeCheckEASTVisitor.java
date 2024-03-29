@@ -319,8 +319,9 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 			throw new TypeException("Inconsistent type " + n.id, n.getLine());
 		}
 		ClassTypeNode ct = ((ClassTypeNode) t);
-		if ( !(ct.allFields.size() == n.args.size()) )
+		if (ct.allFields.size() != n.args.size()) {
 			throw new TypeException("Wrong number of parameters in the invocation of "+n.id,n.getLine());
+		}
 		for (int i = 0; i < n.args.size(); i++)
 			if ( !(isSubtype(visit(n.args.get(i)),ct.allFields.get(i))) )
 				throw new TypeException("Wrong type for "+(i+1)+"-th parameter in the invocation of "+n.id,n.getLine());
@@ -358,7 +359,7 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 		return at.ret;
 	}
 
-	@Override
+/*	@Override
 	public TypeNode visitNode(ClassCallNode n) throws TypeException {
 		if (print) printNode(n);
 		TypeNode t = visit(n.entry);
@@ -375,6 +376,29 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 			if ( !(isSubtype(visit(n.args.get(i)),at.parlist.get(i))) )
 				throw new TypeException("Wrong type for "+(i+1)+"-th parameter in the invocation of "+n.id1,n.getLine());
 		return at.ret;
+	}*/
+
+	@Override
+	public TypeNode visitNode(ClassCallNode node) throws TypeException {
+		if (print) {
+			printNode(node, node.id1+"."+node.id2);
+		}
+		TypeNode methodType = visit(node.methodEntry);
+		if (!(methodType instanceof MethodTypeNode)) {
+			throw new TypeException("Invocation of a non-method " + node.id2, node.getLine());
+		}
+		ArrowTypeNode arrowType = ((MethodTypeNode) methodType).arrowTypeNode;
+		if (node.args.size() != arrowType.parlist.size()) {
+			throw new TypeException("Wrong number of parameters in the invocation of " + node.id2, node.getLine());
+		}
+		for (var i = 0; i < node.args.size(); i++) {
+			if (!isSubtype(visit(node.args.get(i)), arrowType.parlist.get(i))) {
+				throw new TypeException(
+						"Wrong type for " + (i+1) + "-th parameter in the invocation of " + node.id2, node.getLine()
+				);
+			}
+		}
+		return arrowType.ret;
 	}
 
 	/**
@@ -414,6 +438,15 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 		if (print) printNode(n);
 		for (Node par: n.parlist) visit(par);
 		visit(n.ret,"->"); //marks return type
+		return null;
+	}
+
+	@Override
+	public TypeNode visitNode(MethodTypeNode node) throws TypeException {
+		if (print) {
+			printNode(node);
+		}
+		visit(node.arrowTypeNode);
 		return null;
 	}
 

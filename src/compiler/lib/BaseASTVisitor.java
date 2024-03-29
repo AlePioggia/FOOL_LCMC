@@ -34,7 +34,7 @@ public class BaseASTVisitor<S,E extends Exception> {
 
 	/*Tramite la reflection di java prendono il nome del nodo**/
 	protected void printNode(Node n, String s) {
-		System.out.println(indent+extractNodeName(n.getClass().getName())+": "+s);
+		System.out.println(indent + " " + extractNodeName(n.getClass().getName())+": "+s);
 	}
 
 	public S visit(Visitable v) throws E {

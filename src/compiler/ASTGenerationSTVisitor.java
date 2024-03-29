@@ -1,6 +1,7 @@
 package compiler;
 
 import java.util.*;
+import java.util.stream.IntStream;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -284,7 +285,7 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 	//OO
 
 
-	@Override
+/*	@Override
 	public Node visitCldec(CldecContext ctx) {
 		if (print) printVarAndProdName(ctx);
 		if(ctx.ID().size() == 0) return null;
@@ -315,6 +316,32 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 		final ClassNode c = new ClassNode(clId, fieldList, methodList, superId);
 		c.setLine(ctx.ID(0).getSymbol().getLine());
 		return c;
+	}*/
+
+	public Node visitCldec(CldecContext c) {
+		if (print) {
+			printVarAndProdName(c);
+		}
+		String classID = c.ID(0).getText();
+		String superID = null;
+		List<FieldNode> fields = new ArrayList<>();
+
+		if (c.EXTENDS() != null) {
+			superID = c.ID(1).getText();
+		}
+		int extendingPad = c.EXTENDS() != null ? 1 : 0;
+		IntStream.range(1 + extendingPad, c.ID().size()).forEach(i -> {
+			var field = new FieldNode(c.ID(i).getText(), (TypeNode) visit(c.type(i - (1 + extendingPad))));
+			field.setLine(c.ID(i).getSymbol().getLine());
+			fields.add(field);
+		});
+		List<MethodNode> methods = new ArrayList<>();
+		for (var method : c.methdec()) {
+			methods.add((MethodNode) visit(method));
+		}
+		var node = new ClassNode(classID, fields, methods, superID);
+		node.setLine(c.ID(0).getSymbol().getLine());
+		return node;
 	}
 
 	@Override
@@ -381,7 +408,7 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 		}
 
 		final ClassCallNode n = new ClassCallNode(classId, methodId, args);
-		n.setLine(ctx.ID(0).getSymbol().getLine());
+		n.setLine(ctx.ID(1).getSymbol().getLine());
 		return n;
 	}
 
