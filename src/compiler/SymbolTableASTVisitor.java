@@ -324,38 +324,34 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 	public Void visitNode(MethodNode n) throws VoidException {
 		if (print) printNode(n);
 
-		//Declaration scope
+		// DECLARATION SCOPE
 
+		var hm = symTable.get(nestingLevel); // prendo il fronte della lista (nesting level dello scope attuale)
 		List<TypeNode> parTypes = new ArrayList<>();
-		var hm = symTable.get(nestingLevel);
-
-		for (var par: n.parlist) {
-			parTypes.add(par.getType());
-		}
-
-		var overriddenMethodEntry = hm.get(n.id);
+		for (var par: n.parlist) {parTypes.add(par.getType());} //aggiorno la stentry con i tipi
+		var overriddenMethodEntry = hm.get(n.id);       // recupero dalla table l'id del metodo, se c'è già, vuol dire che è override, devo appurare che il tipo sia corretto
 		final TypeNode methodType = new MethodTypeNode(new ArrowTypeNode(parTypes, n.retType));
 		STentry sTentry = null;
 		if (overriddenMethodEntry != null && overriddenMethodEntry.type instanceof MethodTypeNode) {
-			sTentry = new STentry(nestingLevel, methodType, overriddenMethodEntry.offset);
+			sTentry = new STentry(nestingLevel, methodType, overriddenMethodEntry.offset); //se è override, mantengo l'offset del vecchio metodo
 		} else {
-			sTentry = new STentry(nestingLevel, methodType, decOffset++);
+			sTentry = new STentry(nestingLevel, methodType, decOffset++); // se non è override, incremento l'offset
 			if (overriddenMethodEntry != null) {
 				System.out.println("Cannot override method id " + n.id + " with a field");
 				stErrors++;
 			}
 		}
+		n.offset = sTentry.offset;  // setto l'offset in base a quello che ho calcolato sopra
+		hm.put(n.id, sTentry);      // inserisco nella map la entry che ho creato, con id corrispondente
 
-		n.offset = sTentry.offset;
-		hm.put(n.id, sTentry);
+		// METHOD BODY SCOPE
 
-		//Method body scope
-		nestingLevel++;
+		nestingLevel++;            // scendo nel corpo, aumento il nesting level
 		Map<String, STentry> methodsTable = new HashMap<>();
 		symTable.add(methodsTable);
-		var oldDecOffset = decOffset;
-		decOffset = -2; //declarationOffset per il nesting level corrente
-		int parOffset = 1;
+		var oldDecOffset = decOffset; // stores counter for offset of declarations at previous nesting level
+		decOffset = -2;      //resetto il mio decOffset quando entro in un nuovo livello, in quanto, sia parametri che variabili partono da -2 con il nuovo layout
+		int parOffset = 1;   //parOffset è 1 per via del layout scelto, cresce per ogni parametro dichiarato
 
 		//Parameters uses
 		for (var par: n.parlist) {
@@ -366,13 +362,12 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		}
 
 		//Declarations
-		for (var dec: n.declist) {
-			visit(dec);
-		}
-		//Uses induction to elaborate body
-		visit(n.exp);
+		for (var dec: n.declist) {visit(dec);} //visito le dichiarazioni di variabili locali
 
-		symTable.remove(nestingLevel--);
+		//Uses induction to elaborate body
+		visit(n.exp); //visito il corpo della funzione, prima ho elaborato tutte le dichiarazioni ed i parametri, poi analizzo l'espressione, che usa le dichiarazioni (si ricorda il modello let/in)
+
+		symTable.remove(nestingLevel--); //rimuovere la hashmap corrente poiche' esco dallo scope e decremento il nesting level
 		decOffset = oldDecOffset;
 		return null;
 	}
