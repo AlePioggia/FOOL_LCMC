@@ -1,16 +1,6 @@
-//Linguaggio ad alto livello
-/*
-    lo realizzeremo, traducendo, con poche semplici istruzioni. Il compilatore produrrà del codice asm.
-    Ha una struttura, inizia con il main e finisce con l'istruzione halt.
-    Halt = spengo la virtual machine (nel mondo reale non succede).
-    Dopo l'halt abbiamo una serie lunghissima di corpi di funzione richiamabili dal main.
-    Il codice deve essere generato in modo induttivo, altrimenti è troppo complesso. L'induzione
-    si ottiene attraverso lo stack (da qui viene il concetto di Stack virtual Machine)
-*/
 let
-//Creo una classe tipo scala
+
   class List (f:int, r:List) {
-    //metodi
     fun first:int() f;
     fun rest:List() r; 
   }
@@ -60,7 +50,5 @@ let
                             new List (3, 
                                 new List(2,
                                     new List(5,null))))));
-  //questo è un linguaggio funzionale, tutto è una funzione. Nella variabile l ho una lista che creo
-  tramite una classe che si chiama list
+  
 in printList(quicksort(l));
-
