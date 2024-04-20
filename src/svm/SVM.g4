@@ -159,6 +159,7 @@ COL	 : ':' ;
 LABEL	 : ('a'..'z'|'A'..'Z')('a'..'z' | 'A'..'Z' | '0'..'9')* ;
 INTEGER	 : '0' | ('-')?(('1'..'9')('0'..'9')*) ;
 
+//channel(HIDDEN) indica che le espressioni specificate, non producono token in uscita.
 COMMENT : '/*' .*? '*/' -> channel(HIDDEN) ;
 
 WHITESP  : (' '|'\t'|'\n'|'\r')+ -> channel(HIDDEN) ;
