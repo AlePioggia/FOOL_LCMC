@@ -49,7 +49,7 @@ public class ExecuteVM {
         int address;
         switch ( bytecode ) {
           case SVMParser.PUSH:
-            /** devo mettere nello stack cià che viene dopo */
+            /** devo mettere nello stack ciò che viene dopo */
             push( code[ip++] );
             break;
           case SVMParser.POP:
@@ -75,15 +75,14 @@ public class ExecuteVM {
             v2=pop();
             push(v2 - v1);
             break;
-          case SVMParser.STOREW : //legge due cose dallo stack, prima l'indirizzo in cui mettere il valore, poi la seconda è il valore da mettere in quell'indirizzo
-            address = pop();
-            memory[address] = pop();    
+          case SVMParser.STOREW :       //legge due cose dallo stack,
+            address = pop();            //prima l'indirizzo in cui mettere il valore,
+            memory[address] = pop();    //poi la seconda è il valore da mettere in quell'indirizzo
             break;
-          case SVMParser.LOADW : //prende dallo stack con una pop l'indirizzo e accede alla memoria, a quell'indirizzo. Da lì carica il valore nello stack.
-            push(memory[pop()]);
+          case SVMParser.LOADW : //prende dallo stack con una pop l'indirizzo e accede alla memoria, a quell'indirizzo.
+            push(memory[pop()]); // Da lì carica il valore nello stack.
             break;
-          case SVMParser.BRANCH : // fa un salto incondizionato
-            //aggiorno l'instruction pointer
+          case SVMParser.BRANCH : // fa un salto incondizionato, aggiorno l'instruction pointer
             address = code[ip];
             ip = address;
             break;
@@ -99,13 +98,12 @@ public class ExecuteVM {
             v2=pop();
             if (v2 <= v1) ip = address;
             break;
-            case SVMParser.JS : //Differenza JS e BRANCH -> il js è un jump di subroutine, significa che implicitamente voglio tornare indietro prima o poi
-            //prendo l'indirizzo dallo stack
+            //Differenza JS e BRANCH -> il js è un jump di subroutine, significa che implicitamente
+            // voglio tornare indietro prima o poi prendo l'indirizzo dallo stack
+            case SVMParser.JS :
             address = pop();
-            //memorizzo l'indirizzo di ritorno in ra
-            ra = ip;
-            //torno indietro
-            ip = address;
+            ra = ip;    //memorizzo l'indirizzo di ritorno in ra
+            ip = address;   //torno indietro
             break;
          case SVMParser.STORERA : //
             ra=pop();
@@ -125,7 +123,8 @@ public class ExecuteVM {
          case SVMParser.STOREFP : //
             fp=pop();
             break;
-         case SVMParser.COPYFP : //FP punta a frame, ovvero pezzi dello stack. E' comodo avere copyFp, che prende la cima attuale dello stack e lo copia dentro fp.
+         //E' comodo avere copyFp, che prende la cima attuale dello stack e lo copia dentro fp.
+         case SVMParser.COPYFP : //FP punta a frame, ovvero pezzi dello stack.
             fp=sp;
             break;
          case SVMParser.STOREHP : //
