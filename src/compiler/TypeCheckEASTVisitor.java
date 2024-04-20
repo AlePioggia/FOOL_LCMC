@@ -132,11 +132,9 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 					.filter((field) -> -field.offset - 1 < superEntry.allMethods.size()) // attraverso il controllo sulla posizione (a sinistra), recupero solo i campi che fanno override
 					.flatMap((field) -> { // In questo filtro, eseguo il controllo sul tipo, se si manifestano errori, vengono collezionati, in modo ordinato
 						int position = -field.offset - 1;
-						if (!isSubtype(classTypeNode.allFields.get(position), superEntry.allFields.get(position))) {
-							return Stream.of(new TypeException("Wrong type for field " + field.id, field.getLine()));
-						} else {
-							return Stream.empty(); // Non aggiunge nulla allo stream
-						}
+						return !isSubtype(classTypeNode.allFields.get(position), superEntry.allFields.get(position))
+								? Stream.of(new TypeException("Wrong type for field " + field.id, field.getLine()))
+								: Stream.empty();
 					})
 					.toList();
 
@@ -146,11 +144,9 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 					.filter((method) -> method.offset < superEntry.allMethods.size()) // similmente alla gestione dei metodi, faccio un controllo sulla posizione
 					.flatMap((method) -> { //In questo filtro, eseguo il controllo sul tipo, se si manifestano errori, vengono collezionati in modo ordinati
 						int position = method.offset;
-						if (!isSubtype(classTypeNode.allMethods.get(position), superEntry.allMethods.get(position))) {
-							return Stream.of(new TypeException("Wrong type for method " + method.id, method.getLine()));
-						} else {
-							return Stream.empty();
-						}
+						return !isSubtype(classTypeNode.allMethods.get(position), superEntry.allMethods.get(position))
+								? Stream.of(new TypeException("Wrong type for method " + method.id, method.getLine()))
+								: Stream.empty();
 					})
 					.toList();
 
