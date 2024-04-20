@@ -284,61 +284,22 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 
 	//OO
 
-
-/*	@Override
-	public Node visitCldec(CldecContext ctx) {
-		if (print) printVarAndProdName(ctx);
-		if(ctx.ID().size() == 0) return null;
-
-		final String clId = ctx.ID(0).getText();
-		String superId = null;
-
-		final List<FieldNode> fieldList = new ArrayList<>();
-
-		if (ctx.EXTENDS() != null) {
-			superId = ctx.ID(1).getText();
-		}
-
-		for(int i = 1; i < ctx.ID().size(); i++) {
-			final String fieldId = ctx.ID(i).getText();
-			final TypeNode fieldType = (TypeNode) visit(ctx.type(i-1));
-			FieldNode f = new FieldNode(fieldId, fieldType);
-			f.setLine(ctx.ID(i).getSymbol().getLine());
-			fieldList.add(f);
-		}
-
-		final List<MethodNode> methodList = new ArrayList<>();
-		for (MethdecContext dec : ctx.methdec()) {
-			MethodNode m = (MethodNode) visit(dec);
-			methodList.add(m);
-		}
-
-		final ClassNode c = new ClassNode(clId, fieldList, methodList, superId);
-		c.setLine(ctx.ID(0).getSymbol().getLine());
-		return c;
-	}*/
-
 	public Node visitCldec(CldecContext c) {
-		if (print) {
-			printVarAndProdName(c);
-		}
+		if (print) {printVarAndProdName(c);}
 		String classID = c.ID(0).getText();
 		String superID = null;
 		List<FieldNode> fields = new ArrayList<>();
 
-		if (c.EXTENDS() != null) {
-			superID = c.ID(1).getText();
-		}
-		int extendingPad = c.EXTENDS() != null ? 1 : 0;
-		IntStream.range(1 + extendingPad, c.ID().size()).forEach(i -> {
-			var field = new FieldNode(c.ID(i).getText(), (TypeNode) visit(c.type(i - (1 + extendingPad))));
+		if (c.EXTENDS() != null) {superID = c.ID(1).getText();}
+
+		for (int i = 1 + (c.EXTENDS() != null ? 1 : 0); i < c.ID().size(); i++) {
+			var field = new FieldNode(c.ID(i).getText(), (TypeNode) visit(c.type(i - (1 + (c.EXTENDS() != null ? 1 : 0)))));
 			field.setLine(c.ID(i).getSymbol().getLine());
 			fields.add(field);
-		});
-		List<MethodNode> methods = new ArrayList<>();
-		for (var method : c.methdec()) {
-			methods.add((MethodNode) visit(method));
 		}
+
+		List<MethodNode> methods = new ArrayList<>();
+		for (var method : c.methdec()) {methods.add((MethodNode) visit(method));}
 		var node = new ClassNode(classID, fields, methods, superID);
 		node.setLine(c.ID(0).getSymbol().getLine());
 		return node;
