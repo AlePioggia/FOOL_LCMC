@@ -121,8 +121,7 @@ NUM     : '0' | ('1'..'9')('0'..'9')* ;
 
 ID  	: ('a'..'z'|'A'..'Z')('a'..'z' | 'A'..'Z' | '0'..'9')* ; //OO extension
 
-
-WHITESP  : ( '\t' | ' ' | '\r' | '\n' )+    -> channel(HIDDEN) ;
+WHITESP  : ( '\t' | ' ' | '\r' | '\n' )+    -> channel(HIDDEN) ; //channel(HIDDEN) indica che le espressioni specificate, non producono token in uscita.
 
 COMMENT : '/*' .*? '*/' -> channel(HIDDEN) ;
 

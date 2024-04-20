@@ -38,8 +38,6 @@ import compiler.lib.*;
  * Ora dobbiamo occuparci di visitare l'EAST, stampando anche la STEntry. La stEntry deve essere visitata
  * allo stesso modo di node. Devo dunque generalizzare, includendo un'interfaccia Visitable, che va bene
  * sia per nodi che stentry.
- *
- *
  * */
 public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 
@@ -47,12 +45,12 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 	 * Symble table. E' una lista di mappe, mappa nomi di identifictori alla nostra stEntry
 	 * */
 	private List<Map<String, STentry>> symTable = new ArrayList<>();
-	private Map< String, Map<String,STentry> > classTable = new HashMap();
+	private Map<String,Map<String,STentry>> classTable = new HashMap();
 	private int nestingLevel=0; // current nesting level, quando entro in uno scope lo incremento
 	private int decOffset = -2; // counter for offset of local declarations at current nesting level. starts with -2 due to our layout choice
 	private int classOffset = -2;
 	int stErrors=0; // errori che incontriamo
-	Set<String> onClassVisitScope;
+	private Set<String> onClassVisitScope;
 
 	SymbolTableASTVisitor() {}
 	SymbolTableASTVisitor(boolean debug) {super(debug);} // enables print for debugging
@@ -94,6 +92,7 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		symTable.remove(0);
 		return null;
 	}
+
 	//visito e non faccio ulla
 	@Override
 	public Void visitNode(ProgNode n) {
@@ -108,20 +107,16 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 	@Override
 	public Void visitNode(FunNode n) {
 		if (print) printNode(n);
-		// prendo il fronte della lista (nesting level dello scope attuale)
-		Map<String, STentry> hm = symTable.get(nestingLevel);
-		// gestisco i parametri
-		List<TypeNode> parTypes = new ArrayList<>();  
+		Map<String, STentry> hm = symTable.get(nestingLevel); // prendo il fronte della lista (nesting level dello scope attuale)
+		List<TypeNode> parTypes = new ArrayList<>();  // gestisco i parametri
 		for (ParNode par : n.parlist) parTypes.add(par.getType());
-		//ArrowTypeNode è un tipo funzionale, parTypes è una lista di parametri, retType è invece il tipo di ritorno
-		STentry entry = new STentry(nestingLevel, new ArrowTypeNode(parTypes,n.retType),decOffset--);
+		STentry entry = new STentry(nestingLevel, new ArrowTypeNode(parTypes,n.retType), decOffset--); //ArrowTypeNode è un tipo funzionale, parTypes è una lista di parametri, retType è invece il tipo di ritorno
 		//inserimento di ID nella symtable
 		if (hm.put(n.id, entry) != null) {
 			System.out.println("Fun id " + n.id + " at line "+ n.getLine() +" already declared");
 			stErrors++;
-		} 
-		// creare una nuova hashmap per la symTable, vado al nesting nevel successivo, entrando in un nuovo scope
-		nestingLevel++;
+		}
+		nestingLevel++; // creare una nuova hashmap per la symTable, vado al nesting nevel successivo, entrando in un nuovo scope
 		// creo una hashmap per il nuovo scope
 		Map<String, STentry> hmn = new HashMap<>();
 		symTable.add(hmn);
@@ -135,10 +130,8 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 				stErrors++;
 			}
 		for (Node dec : n.declist) visit(dec);
-		//visito il corpo della funzione, prima ho elaborato tutte le dichiarazioni ed i parametri, poi analizzo l'espressione, che usa le dichiarazioni (si ricorda il modello let/in)
-		visit(n.exp);
-		//rimuovere la hashmap corrente poiche' esco dallo scope e decremento il nesting level
-		symTable.remove(nestingLevel--);
+		visit(n.exp); //visito il corpo della funzione, prima ho elaborato tutte le dichiarazioni ed i parametri, poi analizzo l'espressione, che usa le dichiarazioni (si ricorda il modello let/in)
+		symTable.remove(nestingLevel--); //rimuovere la hashmap corrente poiche' esco dallo scope e decremento il nesting level
 		decOffset=prevNLDecOffset; // restores counter for offset of declarations at previous nesting level 
 		return null;
 	}
@@ -263,18 +256,19 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		return null;
 	}
 
+	//ID()
 	@Override
 	public Void visitNode(CallNode n) {
 		if (print) printNode(n);
-		STentry entry = stLookup(n.id);
+		STentry entry = stLookup(n.id); //verifico che la funzione sia dichiarata
 		if (entry == null) {
 			System.out.println("Fun id " + n.id + " at line "+ n.getLine() + " not declared");
 			stErrors++;
 		} else {
-			n.entry = entry;
+			n.entry = entry; // linking
 			n.nl = nestingLevel;
 		}
-		for (Node arg : n.arglist) visit(arg);
+		for (Node arg : n.arglist) visit(arg); // visita degli argomenti della funzione
 		return null;
 	}
 
@@ -489,9 +483,7 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 	}*/
 
 	public Void visitNode(ClassNode node) {
-		if (print) {
-			printNode(node);
-		}
+		if (print) {printNode(node);}
 		var classType = new ClassTypeNode(new ArrayList<>(), new ArrayList<>()); //inizializzazione tipo, se non eredita, rimane tale
 		if (node.superId != null && classTable.containsKey(node.superId)) { //controlla se la classe estende un'altra classe, avvalendosi della class table
 			STentry superClassEntry = symTable.get(0).get(node.superId); // recupero la stEntry della classe da qui eredita, in modo da recuperare i campi ed i metodi.
@@ -524,14 +516,14 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		//--- FIELDS ---
 
 		/*
-		 * Setting the fieldOffset for the extending class
+		 * Setting the fieldOffset for the extending class Extending class: a -> -1, b -> -2, c -> -3; Class impl: d -> -4
 		 */
 		int fieldOffset = -1;
 		if (node.superId != null) {
 			fieldOffset = -((ClassTypeNode) symTable.get(0).get(node.superId).type).allFields.size()-1; // l'offset corrente riparte
 		}
 		for (var field : node.fields) { //dichiarazione di campi
-			if (onClassVisitScope.contains(field.id)) {
+			if (onClassVisitScope.contains(field.id)) { // controllo ripetizioni
 				System.out.println(
 						"Field with id " + field.id + " on line " + field.getLine() + " was already declared"
 				);
@@ -544,7 +536,7 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 				fieldEntry = new STentry(nestingLevel, field.getType(), overriddenFieldEntry.offset); // mantengo il vecchio offset
 				classType.allFields.set(-fieldEntry.offset - 1, fieldEntry.type);                     // modifico il campo esistente sulla virtual table
 			} else {
-				fieldEntry = new STentry(nestingLevel, field.getType(), fieldOffset--);               // l'offset in questo caso è nuovo, quindi decremento ricordando che parte da -2
+				fieldEntry = new STentry(nestingLevel, field.getType(), fieldOffset--);               // l'offset in questo caso è nuovo, quindi decremento ricordando che parte da -1
 				classType.allFields.add(-fieldEntry.offset - 1, fieldEntry.type);               // aggiungo il nuovo campo alla virtual table
 				if (overriddenFieldEntry != null) {
 					System.out.println("Cannot override field id " + field.id + " with a method");
