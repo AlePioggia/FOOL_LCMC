@@ -52,6 +52,9 @@ Non indico il return perché, nel paradigma funzionale, è implicito che un'oper
 exp (comma exp) se ho più argomenti, separati da virgola
 
 La ricorsione a sinistra, qui viene trasformata in ricorsione a destra
+ANTLR4 consente di utilizzare grammatiche ambigue come E -> E+E | E*E | (E) | n
+dichiarando esplicitamente priorità e associatività per i vari operatori (la prima produzione ha priorità più alta).
+Ciò rende possibile usare la grammatica in ANTLR senza bisogno di disambiguarla.
 */
 
 exp     : exp (TIMES | DIV) exp #timesDiv
