@@ -93,7 +93,6 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		return null;
 	}
 
-	//visito e non faccio ulla
 	@Override
 	public Void visitNode(ProgNode n) {
 		if (print) printNode(n);
@@ -343,7 +342,7 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		nestingLevel++;            // scendo nel corpo, aumento il nesting level
 		Map<String, STentry> methodsTable = new HashMap<>();
 		symTable.add(methodsTable);
-		var oldDecOffset = decOffset; // stores counter for offset of declarations at previous nesting level
+		var oldDecOffset = decOffset; // memorizza il contatore per l'offset delle dichiarazioni a nesting level precedente
 		decOffset = -2;      //resetto il mio decOffset quando entro in un nuovo livello, in quanto, sia parametri che variabili partono da -2 con il nuovo layout
 		int parOffset = 1;   //parOffset è 1 per via del layout scelto, cresce per ogni parametro dichiarato
 
@@ -371,7 +370,8 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		var classType = new ClassTypeNode(new ArrayList<>(), new ArrayList<>()); //inizializzazione tipo, se non eredita, rimane tale
 		if (node.superId != null && classTable.containsKey(node.superId)) { //controlla se la classe estende un'altra classe, avvalendosi della class table
 			STentry superClassEntry = symTable.get(0).get(node.superId); // recupero la stEntry della classe da qui eredita, in modo da recuperare i campi ed i metodi.
-			classType = new ClassTypeNode(new ArrayList<>(((ClassTypeNode) superClassEntry.type).allFields), new ArrayList<>(((ClassTypeNode) superClassEntry.type).allMethods)); //imposto il classType con i field
+			classType = new ClassTypeNode(new ArrayList<>(((ClassTypeNode) superClassEntry.type).allFields),
+					new ArrayList<>(((ClassTypeNode) superClassEntry.type).allMethods)); //imposto il classType con i field
 			node.superEntry = superClassEntry; // aggiorno la entry del nodo, la super entry deve partire dal livello globale!
 		} else if (node.superId != null) {
 			System.out.println("Extending class id " + node.superId + " at line " + node.getLine() + " is not declared");
