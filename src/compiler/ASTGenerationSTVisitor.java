@@ -12,7 +12,8 @@ import compiler.lib.*;
 import static compiler.lib.FOOLlib.*;
 
 public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
-
+//Usiamo le classi in AST.java per costruire un visitor dei syntax tree delle espressioni di FOOL.g4
+//Genera un Abstract Syntax Tree fatto di oggetti "Node".
 	String indent;
     public boolean print;
 	
