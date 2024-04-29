@@ -58,16 +58,9 @@ exp (comma exp) se ho più argomenti, separati da virgola
 
 La ricorsione a sinistra, qui viene trasformata in ricorsione a destra
 ANTLR4 consente di utilizzare grammatiche ambigue come E -> E+E | E*E | (E) | n
-dichiarando esplicitamente priorità e associatività per i vari operatori (la prima produzione ha priorità più alta).
-Ciò rende possibile usare la grammatica in ANTLR senza bisogno di disambiguarla.
-L'utilizzo di grammatiche EBNF (Extended Backus-Naur Form), invece di semplici CFG,
-consente di estendere la grammatica aggiungendo a "+" e "*" anche le operazioni "-" e "/"
-(intero della divisione tra interi), con
-- operazioni "*" e "/" allo stesso livello di priorita' (piu' alto)
-- operazioni "+" e "-" allo stesso livello di priorita' (piu' basso)
-- per entrambi i livelli di priorita' associativita a sinistra
+dichiarando esplicitamente priorità e associatività per i vari operatori, (la prima produzione é quella con
+priorità più alta e così via a scendere); ciò rende possibile usare la grammatica in ANTLR senza dover disambiguarla.
 */
-
 exp     : exp (TIMES | DIV) exp #timesDiv
         | exp (PLUS | MINUS) exp #plusMinus
         | exp (EQ | GE | LE) exp #comp
