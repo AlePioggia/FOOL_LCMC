@@ -89,7 +89,8 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 			return n;
 		}
 		Node n = new DivNode(visit(ctx.exp(0)), visit(ctx.exp(1)));
-		n.setLine(ctx.DIV().getSymbol().getLine());
+		n.setLine(ctx.DIV().getSymbol().getLine()); // salvo il numero di linea,
+													// utile per il reporting degli errori
 		return n;
 	}
 
@@ -148,21 +149,15 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 		} else {
 			throw new RuntimeException("Unknown comparison operator");
 		}
-
 		return n;
 	}
 
-
-	/**
-	 * Il varnode è usato per la dichiarazione di una variabile, controllo che sia rispettata
-	 * la sintassi
-	 * */
 	@Override
 	public Node visitVardec(VardecContext c) {
 		if (print) printVarAndProdName(c);
 		Node n = null;
 		if (c.ID()!=null) { //non-incomplete ST
-			//id, tipo (rappresentato a sua volta con un nodo), nodo
+			//id, tipo (rappresentato a sua volta con un nodo), nodo x: Int = pippo
 			n = new VarNode(c.ID().getText(), (TypeNode) visit(c.type()), visit(c.exp()));
 			//numero di linea della variabile, per l'output
 			//La recupero attraverso il token
@@ -175,13 +170,13 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 	public Node visitFundec(FundecContext c) {
 		if (print) printVarAndProdName(c);
 		List<ParNode> parList = new ArrayList<>();
-		for (int i = 1; i < c.ID().size(); i++) { 
+		// ID() comprende sia parametri che dichiarazione di funzione
+		for (int i = 1; i < c.ID().size(); i++) {
 			ParNode p = new ParNode(c.ID(i).getText(),(TypeNode) visit(c.type(i)));
 			p.setLine(c.ID(i).getSymbol().getLine());
 			parList.add(p);
 		}
-		// come nel caso della dichiarazione di variabile elenco le dichiarazioni e le memorizzo
-		// in una lista
+		// come nel caso della dichiarazione di variabile elenco le dichiarazioni e le memorizzo in una lista
 		List<DecNode> decList = new ArrayList<>();
 		for (DecContext dec : c.dec()) decList.add((DecNode) visit(dec));
 		Node n = null;
@@ -271,7 +266,8 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 	}
 
 	/**
-	 * Chiamata di funzione senza parametri
+	 * ID() invece che ID1.ID2()
+	 * sum() invece che a.sum()
 	 * */
 	@Override
 	public Node visitCall(CallContext c) {
@@ -294,7 +290,9 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 		if (c.EXTENDS() != null) {superID = c.ID(1).getText();}
 
 		for (int i = 1 + (c.EXTENDS() != null ? 1 : 0); i < c.ID().size(); i++) {
-			var field = new FieldNode(c.ID(i).getText(), (TypeNode) visit(c.type(i - (1 + (c.EXTENDS() != null ? 1 : 0)))));
+			var field = new FieldNode(c.ID(i).getText(),
+					// l'offset parte da 0, quindi serve la sottrazione per la normalizzazione
+					(TypeNode) visit(c.type(i - (1 + (c.EXTENDS() != null ? 1 : 0)))));
 			field.setLine(c.ID(i).getSymbol().getLine());
 			fields.add(field);
 		}
@@ -342,7 +340,7 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 
 		final String classId = ctx.ID().getText();
 		final List<Node> args = new ArrayList<>();
-		for (ExpContext arg : ctx.exp()) {
+		for (ExpContext arg : ctx.exp()) { // new A(calcParam())
 			args.add(visit(arg));
 		}
 
@@ -357,6 +355,7 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 		return new EmptyNode();
 	}
 
+	// ID1.ID2()
 	@Override
 	public Node visitDotCall(DotCallContext ctx) {
 		if (print) printVarAndProdName(ctx);

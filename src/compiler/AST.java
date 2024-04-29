@@ -293,7 +293,6 @@ public class AST {
 		final String id;
 		public int offset;
 
-		//int offset;
 		public FieldNode(String i, TypeNode t) {
 			id = i;
 			type = t;
