@@ -200,6 +200,56 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		return null;
 	}
 
+	//ID()
+	@Override
+	public Void visitNode(CallNode n) {
+		if (print) printNode(n);
+		STentry entry = stLookup(n.id); //verifico che la funzione sia dichiarata
+		if (entry == null) {
+			System.out.println("Fun id " + n.id + " at line "+ n.getLine() + " not declared");
+			stErrors++;
+		} else {
+			n.entry = entry; // linking
+			n.nl = nestingLevel;
+		}
+		for (Node arg : n.arglist) visit(arg); // visita degli argomenti della funzione
+		return null;
+	}
+
+	/**
+	 * Idnode -> uso della variabile. La variabile la cerco nel nesting level in cui mi trovo.
+	 * Se la trovo lì vuol dire che è dichiarata localmente (stesso scope). Se non la trovo
+	 * guardo nel nesting level precedente (nesting--).
+	 *
+	 * Quando (e se) la trovo, attacco la pallina (STentry) alla foglia.
+	 * */
+	@Override
+	public Void visitNode(IdNode n) {
+		if (print) printNode(n);
+		STentry entry = stLookup(n.id); //cerca la rispettiva dichiarazione, a partire dallo scope corrente, salendo
+		//Controllo se ho trovato o meno la pallina
+		if (entry == null) {
+			System.out.println("Var or Par id " + n.id + " at line "+ n.getLine() + " not declared");
+			stErrors++;
+		} else {
+			n.entry = entry; // metto la pallina nella variabile entry, collego l'uso alla dichiarazione
+			n.nl = nestingLevel; // torno al nesting level originale
+		}
+		return null;
+	}
+
+	@Override
+	public Void visitNode(BoolNode n) {
+		if (print) printNode(n, n.val.toString());
+		return null;
+	}
+
+	@Override
+	public Void visitNode(IntNode n) {
+		if (print) printNode(n, n.val.toString());
+		return null;
+	}
+
 	@Override
 	public Void visitNode(GreaterEqualNode n) throws VoidException {
 		if (print) printNode(n);
@@ -252,116 +302,6 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		if (print) printNode(n);
 		visit(n.left);
 		visit(n.right);
-		return null;
-	}
-
-	//ID()
-	@Override
-	public Void visitNode(CallNode n) {
-		if (print) printNode(n);
-		STentry entry = stLookup(n.id); //verifico che la funzione sia dichiarata
-		if (entry == null) {
-			System.out.println("Fun id " + n.id + " at line "+ n.getLine() + " not declared");
-			stErrors++;
-		} else {
-			n.entry = entry; // linking
-			n.nl = nestingLevel;
-		}
-		for (Node arg : n.arglist) visit(arg); // visita degli argomenti della funzione
-		return null;
-	}
-
-	/**
-	 * Idnode -> uso della variabile. La variabile la cerco nel nesting level in cui mi trovo.
-	 * Se la trovo lì vuol dire che è dichiarata localmente (stesso scope). Se non la trovo
-	 * guardo nel nesting level precedente (nesting--).
-	 *
-	 * Quando (e se) la trovo, attacco la pallina (STentry) alla foglia.
-	 * */
-	@Override
-	public Void visitNode(IdNode n) {
-		if (print) printNode(n);
-		STentry entry = stLookup(n.id); //cerca la rispettiva dichiarazione, a partire dallo scope corrente, salendo
-		//Controllo se ho trovato o meno la pallina
-		if (entry == null) {
-			System.out.println("Var or Par id " + n.id + " at line "+ n.getLine() + " not declared");
-			stErrors++;
-		} else {
-			n.entry = entry; // metto la pallina nella variabile entry, collego l'uso alla dichiarazione
-			n.nl = nestingLevel; // torno al nesting level originale
-		}
-		return null;
-	}
-
-	@Override
-	public Void visitNode(BoolNode n) {
-		if (print) printNode(n, n.val.toString());
-		return null;
-	}
-
-	@Override
-	public Void visitNode(IntNode n) {
-		if (print) printNode(n, n.val.toString());
-		return null;
-	}
-
-	/***
-	 * Very similar to FunNode, it differs from the fact that it even contains local declarations
-	 * @TODO add prints
-	 *
-	 * @param n
-	 * @return
-	 * @throws VoidException
-	 */
-	@Override
-	public Void visitNode(MethodNode n) throws VoidException {
-		if (print) printNode(n);
-
-		// DECLARATION SCOPE
-
-		var hm = symTable.get(nestingLevel); // prendo il fronte della lista (nesting level dello scope attuale)
-		List<TypeNode> parTypes = new ArrayList<>();
-		for (var par: n.parlist) {parTypes.add(par.getType());} //aggiorno la stentry con i tipi
-		var overriddenMethodEntry = hm.get(n.id);       // recupero dalla table l'id del metodo, se c'è già, vuol dire che è override, devo appurare che il tipo sia corretto
-		final TypeNode methodType = new MethodTypeNode(new ArrowTypeNode(parTypes, n.retType));
-		STentry sTentry = null;
-		if (overriddenMethodEntry != null && overriddenMethodEntry.type instanceof MethodTypeNode) {
-			sTentry = new STentry(nestingLevel, methodType, overriddenMethodEntry.offset); //se è override, mantengo l'offset del vecchio metodo
-		} else {
-			sTentry = new STentry(nestingLevel, methodType, decOffset++); // se non è override, incremento l'offset
-			if (overriddenMethodEntry != null) {
-				System.out.println("Cannot override method id " + n.id + " with a field");
-				stErrors++;
-			}
-		}
-		n.offset = sTentry.offset;  // setto l'offset in base a quello che ho calcolato sopra
-		hm.put(n.id, sTentry);      // inserisco nella map la entry che ho creato, con id corrispondente
-
-		// METHOD BODY SCOPE
-
-		nestingLevel++;            // scendo nel corpo, aumento il nesting level
-		Map<String, STentry> methodsTable = new HashMap<>();
-		symTable.add(methodsTable);
-		var oldDecOffset = decOffset; // memorizza il contatore per l'offset delle dichiarazioni a nesting level precedente
-		decOffset = -2;      //resetto il mio decOffset quando entro in un nuovo livello, in quanto, sia parametri che variabili partono da -2 con il nuovo layout
-		int parOffset = 1;   //parOffset è 1 per via del layout scelto, cresce per ogni parametro dichiarato
-
-		//Parameters uses
-		for (var par: n.parlist) {
-			if (methodsTable.put(par.id, new STentry(nestingLevel,par.getType(),parOffset++)) != null) {
-				System.out.println("Par id " + par.id + " at line "+ n.getLine() +" already declared");
-				stErrors++;
-			}
-		}
-
-		//Declarations
-		for (var dec: n.declist) {visit(dec);} //visito le dichiarazioni di variabili locali
-
-		//Uses induction to elaborate body
-		visit(n.exp); //visito il corpo della funzione, prima ho elaborato tutte le dichiarazioni ed i parametri, poi analizzo l'espressione, che usa le dichiarazioni (si ricorda il modello let/in)
-
-		symTable.remove(nestingLevel--); //rimuovere la hashmap corrente poiche' esco dallo scope e decremento il nesting level
-		decOffset = oldDecOffset;
 		return null;
 	}
 
@@ -459,6 +399,90 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		return null;
 	}
 
+	/***
+	 * Very similar to FunNode, it differs from the fact that it even contains local declarations
+	 * @TODO add prints
+	 *
+	 * @param n
+	 * @return
+	 * @throws VoidException
+	 */
+	@Override
+	public Void visitNode(MethodNode n) throws VoidException {
+		if (print) printNode(n);
+
+		// DECLARATION SCOPE
+
+		var hm = symTable.get(nestingLevel); // prendo il fronte della lista (nesting level dello scope attuale)
+		List<TypeNode> parTypes = new ArrayList<>();
+		for (var par: n.parlist) {parTypes.add(par.getType());} //aggiorno la stentry con i tipi
+		var overriddenMethodEntry = hm.get(n.id);       // recupero dalla table l'id del metodo, se c'è già, vuol dire che è override, devo appurare che il tipo sia corretto
+		final TypeNode methodType = new MethodTypeNode(new ArrowTypeNode(parTypes, n.retType));
+		STentry sTentry = null;
+		if (overriddenMethodEntry != null && overriddenMethodEntry.type instanceof MethodTypeNode) {
+			sTentry = new STentry(nestingLevel, methodType, overriddenMethodEntry.offset); //se è override, mantengo l'offset del vecchio metodo
+		} else {
+			sTentry = new STentry(nestingLevel, methodType, decOffset++); // se non è override, incremento l'offset
+			if (overriddenMethodEntry != null) {
+				System.out.println("Cannot override method id " + n.id + " with a field");
+				stErrors++;
+			}
+		}
+		n.offset = sTentry.offset;  // setto l'offset in base a quello che ho calcolato sopra
+		hm.put(n.id, sTentry);      // inserisco nella map la entry che ho creato, con id corrispondente
+
+		// METHOD BODY SCOPE
+
+		nestingLevel++;            // scendo nel corpo, aumento il nesting level
+		Map<String, STentry> methodsTable = new HashMap<>();
+		symTable.add(methodsTable);
+		var oldDecOffset = decOffset; // memorizza il contatore per l'offset delle dichiarazioni a nesting level precedente
+		decOffset = -2;      //resetto il mio decOffset quando entro in un nuovo livello, in quanto, sia parametri che variabili partono da -2 con il nuovo layout
+		int parOffset = 1;   //parOffset è 1 per via del layout scelto, cresce per ogni parametro dichiarato
+
+		//Parameters uses
+		for (var par: n.parlist) {
+			if (methodsTable.put(par.id, new STentry(nestingLevel,par.getType(),parOffset++)) != null) {
+				System.out.println("Par id " + par.id + " at line "+ n.getLine() +" already declared");
+				stErrors++;
+			}
+		}
+
+		//Declarations
+		for (var dec: n.declist) {visit(dec);} //visito le dichiarazioni di variabili locali
+
+		//Uses induction to elaborate body
+		visit(n.exp); //visito il corpo della funzione, prima ho elaborato tutte le dichiarazioni ed i parametri, poi analizzo l'espressione, che usa le dichiarazioni (si ricorda il modello let/in)
+
+		symTable.remove(nestingLevel--); //rimuovere la hashmap corrente poiche' esco dallo scope e decremento il nesting level
+		decOffset = oldDecOffset;
+		return null;
+	}
+
+	// chiamata di un metodo da fuori id1.id2();
+	@Override
+	public Void visitNode(ClassCallNode node) throws VoidException {
+		if (print) printNode(node);
+		STentry entry = stLookup(node.id1); //cerco attraverso la risalita della static chain of access link, la dichiarazione di id1 (che è una classe)
+		if (entry == null) { // se non è dichiarata, è un errore!
+			System.out.println("Var or Par id " + node.id1 + " at line " + node.getLine() + " not declared");
+			stErrors++;
+		} else {
+			node.entry = entry;
+			node.nestingLevel = nestingLevel;
+			node.methodEntry = classTable.get(((RefTypeNode) entry.type).id).get(node.id2); // setta la stentry di id2, cercandola nella virtual table (raggiunta tramite class table) della classe del tipo RRefTypeNode di id1
+			if (node.methodEntry == null) { //se id1 non ha il tipo corrispondente, è un errore
+				System.out.println("Object id " + node.id1 + " at line "
+						+ node.getLine() + " has no method " + node.id2);
+				stErrors++;
+			}
+		}
+		for (var arg: node.args) {
+			visit(arg); //visito gli argomenti della chiamata, elaborandoli tramite induzione
+		}
+
+		return null;
+	}
 
 	@Override
 	public Void visitNode(NewNode n) throws VoidException {
@@ -490,31 +514,6 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 			System.out.println("Class with id " + n.id + " on line " + n.getLine() + " was not declared");
 			stErrors++;
 		}
-		return null;
-	}
-
-	// chiamata di un metodo da fuori id1.id2();
-	@Override
-	public Void visitNode(ClassCallNode node) throws VoidException {
-		if (print) printNode(node);
-		STentry entry = stLookup(node.id1); //cerco attraverso la risalita della static chain of access link, la dichiarazione di id1 (che è una classe)
-		if (entry == null) { // se non è dichiarata, è un errore!
-			System.out.println("Var or Par id " + node.id1 + " at line " + node.getLine() + " not declared");
-			stErrors++;
-		} else {
-			node.entry = entry;
-			node.nestingLevel = nestingLevel;
-			node.methodEntry = classTable.get(((RefTypeNode) entry.type).id).get(node.id2); // setta la stentry di id2, cercandola nella virtual table (raggiunta tramite class table) della classe del tipo RRefTypeNode di id1
-			if (node.methodEntry == null) { //se id1 non ha il tipo corrispondente, è un errore
-				System.out.println("Object id " + node.id1 + " at line "
-						+ node.getLine() + " has no method " + node.id2);
-				stErrors++;
-			}
-		}
-		for (var arg: node.args) {
-			visit(arg); //visito gli argomenti della chiamata, elaborandoli tramite induzione
-		}
-
 		return null;
 	}
 }
