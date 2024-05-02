@@ -272,7 +272,7 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 	public Node visitCall(CallContext c) {
 		if (print) printVarAndProdName(c);		
 		List<Node> arglist = new ArrayList<>(); //elenco di argomenti
-		for (ExpContext arg : c.exp()) arglist.add(visit(arg));
+		for (var arg : c.exp()) arglist.add(visit(arg));
 		Node n = new CallNode(c.ID().getText(), arglist);
 		n.setLine(c.ID().getSymbol().getLine());
 		return n;
@@ -326,8 +326,7 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 			declarations.add(m);
 		}
 
-		Node exp = visit(ctx.exp());
-		final MethodNode m = new MethodNode(methId, methType, params, declarations, exp);
+		final MethodNode m = new MethodNode(methId, methType, params, declarations, visit(ctx.exp()));
 		m.setLine(ctx.ID(0).getSymbol().getLine());
 		return m;
 	}
@@ -358,7 +357,7 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 	@Override
 	public Node visitDotCall(DotCallContext ctx) {
 		if (print) printVarAndProdName(ctx);
-		if(ctx.ID().size() != 2) return null;
+/*		if(ctx.ID().size() != 2) return null;*/
 
 		final String classId = ctx.ID(0).getText();
 		final String methodId = ctx.ID(1).getText();

@@ -48,7 +48,6 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 	private Map<String,Map<String,STentry>> classTable = new HashMap();
 	private int nestingLevel=0; // current nesting level, quando entro in uno scope lo incremento
 	private int decOffset = -2; // counter for offset of local declarations at current nesting level. starts with -2 due to our layout choice
-	private int classOffset = -2;
 	int stErrors=0; // errori che incontriamo
 	private Set<String> onClassVisitScope;
 
@@ -467,7 +466,7 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		if (entry == null) { // se non è dichiarata, è un errore!
 			System.out.println("Var or Par id " + node.id1 + " at line " + node.getLine() + " not declared");
 			stErrors++;
-		} else {
+		} else if (entry.type instanceof RefTypeNode) {
 			node.entry = entry;
 			node.nestingLevel = nestingLevel;
 			node.methodEntry = classTable.get(((RefTypeNode) entry.type).id).get(node.id2); // setta la stentry di id2, cercandola nella virtual table (raggiunta tramite class table) della classe del tipo RRefTypeNode di id1

@@ -320,9 +320,14 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 		return new BoolTypeNode();
 	}
 
-	/**
+/*
+	*/
+/*	*//*
+*/
+/**
 	 * Possiamo assumere che i parametri siano corretti, perché verificato dal symbolTableVisitor
 	 * */
+
 	@Override
 	public TypeNode visitNode(ClassNode n) throws TypeException {
 		if (print) printNode(n, n.classId);
@@ -368,6 +373,7 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 		}
 		return null;
 	}
+
 
 	@Override
 	public TypeNode visitNode(MethodNode n) throws TypeException {

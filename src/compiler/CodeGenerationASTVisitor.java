@@ -446,9 +446,14 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 		}
 		this.dispatchTables.add(dispatchTable);
 		//add address for each method, it's needed to visit it first
-		for (var method: n.methods) {
+		for (int i = 0; i < n.methods.size(); i++) {
+			var method = n.methods.get(i);
 			visit(method);
-			dispatchTable.add(method.label);
+			if (method.offset < dispatchTable.size()) {
+				dispatchTable.set(method.offset, method.label);
+			} else {
+				dispatchTable.add(method.offset, method.label);
+			}
 		}
 		String codeGeneration = "";
 		String loadHp = "lhp"; //Used to put hp value in stack, it will be the dispatch pointer to return (last available position)
