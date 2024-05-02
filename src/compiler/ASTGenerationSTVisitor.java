@@ -12,7 +12,14 @@ import compiler.lib.*;
 import static compiler.lib.FOOLlib.*;
 
 public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
-
+	/**
+	 * Usiamo le classi nel file AST.java per costruire un visitor dei syntax tree delle espressioni di FOOL.g4
+	 * Genera un Abstract Syntax Tree fatto di oggetti "Node".
+	 * Possiamo calcolare il risultato di una espressione visitando il relativo albero sintattico,
+	 * che ANTLR4 genera esplicitamente come un albero di oggetti.
+	 * Ogni nodo interno dell'albero è di classe "XxxContext" dove "xxx" è il nome di una variabile della grammatica
+	 * (l'iniziale è resa maiuscola).
+	 */
 	String indent;
     public boolean print;
 	
@@ -47,7 +54,6 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 
 	/**
 	 Quando visito prog devo generare un progNode. In input deve riceve il figlio (ovvero ciò che c'è dentro)
-
 	 * */
 	@Override
 	public Node visitProg(ProgContext c) {
@@ -88,8 +94,7 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 			return n;
 		}
 		Node n = new DivNode(visit(ctx.exp(0)), visit(ctx.exp(1)));
-		n.setLine(ctx.DIV().getSymbol().getLine()); // salvo il numero di linea,
-													// utile per il reporting degli errori
+		n.setLine(ctx.DIV().getSymbol().getLine());
 		return n;
 	}
 
@@ -148,15 +153,17 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 		} else {
 			throw new RuntimeException("Unknown comparison operator");
 		}
+
 		return n;
 	}
 
+	//Il varnode è usato per la dichiarazione di una variabile, controllo che sia rispettata la sintassi
 	@Override
 	public Node visitVardec(VardecContext c) {
 		if (print) printVarAndProdName(c);
 		Node n = null;
 		if (c.ID()!=null) { //non-incomplete ST
-			//id, tipo (rappresentato a sua volta con un nodo), nodo x: Int = pippo
+			//id, tipo (rappresentato a sua volta con un nodo), nodo
 			n = new VarNode(c.ID().getText(), (TypeNode) visit(c.type()), visit(c.exp()));
 			//numero di linea della variabile, per l'output
 			//La recupero attraverso il token
@@ -169,8 +176,7 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 	public Node visitFundec(FundecContext c) {
 		if (print) printVarAndProdName(c);
 		List<ParNode> parList = new ArrayList<>();
-		// ID() comprende sia parametri che dichiarazione di funzione
-		for (int i = 1; i < c.ID().size(); i++) {
+		for (int i = 1; i < c.ID().size(); i++) { 
 			ParNode p = new ParNode(c.ID(i).getText(),(TypeNode) visit(c.type(i)));
 			p.setLine(c.ID(i).getSymbol().getLine());
 			parList.add(p);
@@ -182,8 +188,7 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 		if (c.ID().size()>0) { //non-incomplete ST
 			// devo passare il nome della funzione (c.ID)
 			// il tipo di ritorno
-			// Mentre nelle variabili c'è solo un id, nelle funzioni ce ne sono diverse, ovviamente
-			// selezioniamo il primo
+			// Mentre nelle variabili c'è solo un id, nelle funzioni ce ne sono diverse, selezioniamo il primo
 			n = new FunNode(c.ID(0).getText(),(TypeNode)visit(c.type(0)),parList,decList,visit(c.exp()));
 			n.setLine(c.FUN().getSymbol().getLine()); // setto il numero di linea
 		}
@@ -239,9 +244,8 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 	}
 
 	/**
-	 * Ritorno direttamente il risultato della sua visita, perché non deve aggiungere oggetti java
-	 * Le parentesi servono per costruire l'albero correttamente, ma le elimino, perché nell'ast non sono
-	 * comprese.
+	 * Ritorno direttamente il risultato della sua visita, perché non deve aggiungere oggetti java.
+	 * Le parentesi servono per costruire l'albero correttamente, ma le elimino, perché nell'ast non sono comprese.
 	 * */
 	@Override
 	public Node visitPars(ParsContext c) {
@@ -265,8 +269,7 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 	}
 
 	/**
-	 * ID() invece che ID1.ID2()
-	 * sum() invece che a.sum()
+	 * Chiamata di funzione senza parametri
 	 * */
 	@Override
 	public Node visitCall(CallContext c) {
@@ -289,9 +292,7 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 		if (c.EXTENDS() != null) {superID = c.ID(1).getText();}
 
 		for (int i = 1 + (c.EXTENDS() != null ? 1 : 0); i < c.ID().size(); i++) {
-			var field = new FieldNode(c.ID(i).getText(),
-					// l'offset parte da 0, quindi serve la sottrazione per la normalizzazione
-					(TypeNode) visit(c.type(i - (1 + (c.EXTENDS() != null ? 1 : 0)))));
+			var field = new FieldNode(c.ID(i).getText(), (TypeNode) visit(c.type(i - (1 + (c.EXTENDS() != null ? 1 : 0)))));
 			field.setLine(c.ID(i).getSymbol().getLine());
 			fields.add(field);
 		}
@@ -338,7 +339,7 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 
 		final String classId = ctx.ID().getText();
 		final List<Node> args = new ArrayList<>();
-		for (ExpContext arg : ctx.exp()) { // new A(calcParam())
+		for (ExpContext arg : ctx.exp()) {
 			args.add(visit(arg));
 		}
 
@@ -353,7 +354,6 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 		return new EmptyNode();
 	}
 
-	// ID1.ID2()
 	@Override
 	public Node visitDotCall(DotCallContext ctx) {
 		if (print) printVarAndProdName(ctx);

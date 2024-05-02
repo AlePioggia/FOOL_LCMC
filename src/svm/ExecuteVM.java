@@ -22,13 +22,13 @@ public class ExecuteVM {
     private int[] code;
     private int[] memory = new int[MEMSIZE];
     
-    private int ip = 0;
-    private int sp = MEMSIZE;
+    private int ip = 0; //instruction pointer
+    private int sp = MEMSIZE;   //stack pointer
     
-    private int hp = 0;       
-    private int fp = MEMSIZE; 
-    private int ra;
-    private int tm;
+    private int hp = 0; //heap pointer
+    private int fp = MEMSIZE; //frame pointer
+    private int ra; //return address
+    private int tm; //temporary storage
 
     /**
      * Il code verrà passato al costruttore, dall'assemblatore. code contiene il codice da eseguire.
@@ -49,7 +49,7 @@ public class ExecuteVM {
         int address;
         switch ( bytecode ) {
           case SVMParser.PUSH:
-            /** devo mettere nello stack ciò che viene dopo */
+            /* devo mettere nello stack ciò che viene dopo */
             push( code[ip++] );
             break;
           case SVMParser.POP:

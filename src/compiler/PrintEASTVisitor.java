@@ -9,19 +9,14 @@ Attraverso l'uso dei generici, abbiamo potuto utilizzare anche il void, ritornan
 Questo perché, ovviamente nella print non devo ritornare nessun valore.
 Ahimé return null è una sfortuna tecnica.
 
-Abilitando il debug ho la stampa dell'albero fino all'eccezione, oltre all'eccezione stessa.
+La voidexception è un'eccezione unchecked che serve come parametro da passare al BaseVisitor. Il fatto che
+sia unchecked mi consente di continuare ad usare  i metodi di visita di prima, che non hanno la throws e chiamano
+la visita senza try catch
 **/
-
-/**
- * La gestione del meccanismo di stampa è presente in BaseVisitor
- * Ogni metodo di visita lancia un'eccezione
- * */
 
 public class PrintEASTVisitor extends BaseEASTVisitor<Void,VoidException> {
 
-	PrintEASTVisitor() {
-		super(false, true);
-	}
+	PrintEASTVisitor() { super(false,true); } 
 
 	@Override
 	public Void visitNode(ProgLetInNode n) {
@@ -40,7 +35,7 @@ public class PrintEASTVisitor extends BaseEASTVisitor<Void,VoidException> {
 
 	@Override
 	public Void visitNode(FunNode n) {
-		printNode(n, n.id);
+		printNode(n,n.id);
 		visit(n.retType);
 		//ciclo i parametri, la variabile è di tipo ParNode
 		// quindi richiama direttamente la visit su ParNode, senza passare dalla visit di node (che chiama l'accept)
@@ -53,14 +48,14 @@ public class PrintEASTVisitor extends BaseEASTVisitor<Void,VoidException> {
 
 	@Override
 	public Void visitNode(ParNode n) {
-		printNode(n, n.id);
+		printNode(n,n.id);
 		visit(n.getType());
 		return null;
 	}
 
 	@Override
 	public Void visitNode(VarNode n) {
-		printNode(n, n.id);
+		printNode(n,n.id);
 		visit(n.getType());
 		visit(n.exp);
 		return null;
@@ -116,7 +111,7 @@ public class PrintEASTVisitor extends BaseEASTVisitor<Void,VoidException> {
 
 	@Override
 	public Void visitNode(CallNode n) {
-		printNode(n, n.id + " at nestinglevel " + n.nl);
+		printNode(n,n.id+" at nestinglevel "+n.nl); 
 		visit(n.entry);
 		for (Node arg : n.arglist) visit(arg);
 		return null;
@@ -124,28 +119,28 @@ public class PrintEASTVisitor extends BaseEASTVisitor<Void,VoidException> {
 
 	@Override
 	public Void visitNode(IdNode n) {
-		printNode(n, n.id + " at nestinglevel " + n.nl);
+		printNode(n,n.id+" at nestinglevel "+n.nl); 
 		visit(n.entry);
 		return null;
 	}
 
 	@Override
 	public Void visitNode(BoolNode n) {
-		printNode(n, n.val.toString());
+		printNode(n,n.val.toString());
 		return null;
 	}
 
 	@Override
 	public Void visitNode(IntNode n) {
-		printNode(n, n.val.toString());
+		printNode(n,n.val.toString());
 		return null;
 	}
-
+	
 	@Override
 	public Void visitNode(ArrowTypeNode n) {
 		printNode(n);
-		for (Node par : n.parlist) visit(par); //stampo ogni singolo parametro
-		visit(n.ret, "->"); //marks return type, il tipo di ritorno lo marchiamo con una freccia
+		for (Node par: n.parlist) visit(par); //stampo ogni singolo parametro
+		visit(n.ret,"->"); //marks return type, il tipo di ritorno lo marchiamo con una freccia
 		return null;
 	}
 
@@ -211,13 +206,12 @@ public class PrintEASTVisitor extends BaseEASTVisitor<Void,VoidException> {
 
 	@Override
 	public Void visitSTentry(STentry entry) {
-		printSTentry("nestlev " + entry.nl);
+		printSTentry("nestlev "+entry.nl);
 		printSTentry("type");
 		visit(entry.type); //rispetto agli altri, lo visito, potrebbe essere un tipo complesso
-		printSTentry("offset " + entry.offset);
+		printSTentry("offset "+entry.offset);
 		return null;
 	}
-
 	@Override
 	public Void visitNode(ClassNode n) throws VoidException {
 		printNode(n, n.classId);
@@ -287,4 +281,6 @@ public class PrintEASTVisitor extends BaseEASTVisitor<Void,VoidException> {
 		printNode(n, n.id);
 		return null;
 	}
+
+
 }

@@ -7,6 +7,12 @@ import compiler.lib.*;
  * Ogni classe dell'AST è statica per renderla pubblica e farla stare in un unico file.
  * Tutti i file estendono la classe astratta node.
  * Vogliamo mantenere un ordinamento, i primi metodi sono relativi alla radice, scendendo invece vado verso le foglie.
+ *
+ * BaseASTVisitor contiene: il codice di visit(Node n) e una implementazione vuota per tutti i metodi visitNode.
+ * Le classi in AST devono invocare visitNode(this) su un generico BaseASTVisitor:
+ * devo modificare il metodo accept in modo che riceva un generico BaseASTVisitor sia nell'interfaccia Node che nelle classi in AST
+ *
+ *
  * */
 
 public class AST {
@@ -293,6 +299,7 @@ public class AST {
 		final String id;
 		public int offset;
 
+		//int offset;
 		public FieldNode(String i, TypeNode t) {
 			id = i;
 			type = t;
