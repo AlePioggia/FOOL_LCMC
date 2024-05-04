@@ -151,43 +151,47 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 		return "push -1";
 	}
 
+	/**
+	 * Dichiarazione Classe: codice ritornato
+	 * 1. metto valore di $hp sullo stack, sarà il dispatch
+	 * pointer da ritornare alla fine.
+	 * 2. Creo sullo heap la dispatch table,
+	 * lavorando sullo stack, ogni volta, parto dalla posizione 0
+	 * della dispatch table (dove c'è il primo metodo),
+	 * caricherò la sua etichetta sullo stack e dovrò
+	 * poi fare in modo che questa etichetta finisca nell'indirizzo hp.
+	 * Uso le istruzioni della nostra vm per mettere la label dentro hp.
+	 */
 	@Override
-	public String visitNode(ClassNode n) {
-		if (print)
-			printNode(n, n.classId);
+	public String visitNode(ClassNode node) {
+		if (print) {
+			printNode(node, node.classId);
+		}
 		// table which contains addresses to class methods
 		List<String> dispatchTable = new ArrayList<>();
-		//
-		if (n.superId != null) {
-			// dispatch table of inherited class
-			dispatchTable.addAll(dispatchTables.get(-n.superEntry.offset - 2));
+		dispatchTables.add(dispatchTable);
+		if (node.superId != null) {
+			//dispatch table of inherited class
+			dispatchTable.addAll(dispatchTables.get(-node.superEntry.offset-2));
 		}
-		this.dispatchTables.add(dispatchTable);
 		// add address for each method, it's needed to visit it first
-		for (var method : n.methods) {
+		for (var method: node.methods) {
 			visit(method);
-			dispatchTable.add(method.label);
+			// check override
+			if (method.offset < dispatchTable.size()) {
+				dispatchTable.set(method.offset, method.label);
+			} else {
+				dispatchTable.add(method.offset, method.label);
+			}
 		}
-		String codeGeneration = "";
-		String loadHp = "lhp"; // Used to put hp value in stack, it will be the dispatch pointer to return
-		/**
-		 * Dichiarazione Classe: codice ritornato
-		 * 1. metto valore di $hp sullo stack, sarà il dispatch
-		 * pointer da ritornare alla fine.
-		 * 2. Creo sullo heap la dispatch table,
-		 * lavorando sullo stack, ogni volta, parto dalla posizione 0
-		 * della dispatch table (dove c'è il primo metodo),
-		 * caricherò la sua etichetta sullo stack e dovrò
-		 * poi fare in modo che questa etichetta finisca nell'indirizzo hp.
-		 * Uso le istruzioni della nostra vm per mettere la label dentro hp.
-		 */
-		for (var label : dispatchTable) {
+		String codeGeneration = null;
+		for (String label : dispatchTable) {
 			codeGeneration = nlJoin(
 					codeGeneration,
 					"push " + label,
 					"lhp", // push(hp)
-					"sw", // 1. address = pop() -> takes hp value, then memory[address] = pop(), to put
-							// label in heap
+					"sw",  // 1. address = pop() -> takes hp value, then memory[address] = pop(), to put
+						   // label in heap
 
 					"lhp", // increment hp
 					"push 1",
@@ -195,12 +199,12 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 
 					"shp" // hp = pop(), stores new hp address in stack, to setup for next cycle
 			);
-
 		}
-
-		return nlJoin(loadHp, codeGeneration);
+		return nlJoin(
+				"lhp",
+				codeGeneration
+		);
 	}
-
 	// sufficiente visitarla, per mettere il risultato sullo stack
 	@Override
 	public String visitNode(VarNode n) {
@@ -307,25 +311,26 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 	}
 
 	@Override
-	public String visitNode(GreaterEqualNode n) throws VoidException {
-		if (print)
-			printNode(n);
-		var l1 = freshLabel();
-		var l2 = freshLabel();
+	public String visitNode(GreaterEqualNode node) {
+		if (print) {
+			printNode(node);
+		}
+		String label1 = freshLabel();
+		String label2 = freshLabel();
 		return nlJoin(
-				visitNode(new EqualNode(n.left, n.right)), // checks if they're equal, the result will be on top of the
-															// stack
-				"push 1",
-				"beq " + l2,
-				visit(n.left),
-				visit(n.right),
-				"bleq " + l1,
-				"push 1",
-				"b " + l2,
-				l1 + ":",
+				visit(node.right),
+				visit(node.left),
+				"sub",
 				"push 0",
-				l2 + ":");
+				"bleq " + label1,
+				"push 0",
+				"b " + label2,
+				label1 + ":",
+				"push 1",
+				label2 + ":"
+		);
 	}
+
 
 	@Override
 	public String visitNode(NotNode n) throws VoidException {
