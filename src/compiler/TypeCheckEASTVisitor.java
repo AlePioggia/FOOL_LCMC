@@ -229,10 +229,6 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode, TypeExceptio
 		TypeNode t = visit(n.th);
 		TypeNode e = visit(n.el);
 		var lowestCommonAncestor = lowestCommonAncestor(t, e);
-		if (isSubtype(t, e))
-			return e;
-		if (isSubtype(e, t))
-			return t;
 		if (lowestCommonAncestor == null) {
 			throw new TypeException("Failed typecheking for if-else statement ", n.getLine());
 		}
